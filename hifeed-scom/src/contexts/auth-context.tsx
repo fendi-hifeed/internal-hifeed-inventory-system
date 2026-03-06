@@ -3,7 +3,7 @@
 import { createContext, useContext, useState, useEffect, type ReactNode } from "react";
 import { type MockUser, roleAccessMatrix } from "@/data/mock-data";
 
-export type AccessKey = "dashboard" | "procurement" | "farm" | "inventory" | "production" | "logistics" | "traceability";
+export type AccessKey = "dashboard" | "procurement" | "farm" | "inventory" | "production" | "logistics" | "traceability" | "rnd" | "it_admin" | "sales";
 
 interface AuthContextType {
     user: MockUser | null;

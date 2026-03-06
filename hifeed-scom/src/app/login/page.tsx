@@ -22,6 +22,10 @@ const moduleIcons: Record<string, string> = {
     inventory: "📦",
     production: "🏭",
     logistics: "🚚",
+    traceability: "🔗",
+    rnd: "🧪",
+    it_admin: "⚙️",
+    sales: "🧾",
 };
 
 const moduleNames: Record<string, string> = {
@@ -31,6 +35,10 @@ const moduleNames: Record<string, string> = {
     inventory: "Inventory",
     production: "Production",
     logistics: "Logistics",
+    traceability: "Traceability",
+    rnd: "R&D",
+    it_admin: "IT Admin",
+    sales: "Sales / POS",
 };
 
 export default function LoginPage() {
@@ -90,7 +98,7 @@ export default function LoginPage() {
                                 <Leaf className="h-8 w-8 text-white" />
                             </div>
                             <h1 className="text-2xl font-bold tracking-tight text-white">
-                                Hifeed<span className="text-emerald-400">.co</span>
+                                HiFeed<span className="text-emerald-400">.co</span>
                             </h1>
                             <p className="mt-1 text-sm text-white/50">
                                 Supply Chain & Operations Management
@@ -275,7 +283,7 @@ export default function LoginPage() {
 
                 {/* Footer */}
                 <p className="mt-6 text-center text-xs text-white/20">
-                    © 2026 Hifeed.co — All rights reserved
+                    © 2026 HiFeed.co — All rights reserved
                 </p>
             </div>
         </div>

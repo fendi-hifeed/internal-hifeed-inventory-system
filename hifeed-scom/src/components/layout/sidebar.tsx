@@ -22,6 +22,9 @@ import {
     X,
     LogOut,
     Shield,
+    FlaskConical,
+    Settings2,
+    Receipt,
 } from "lucide-react";
 import { useAuth, AccessKey } from "@/contexts/auth-context";
 
@@ -39,7 +42,11 @@ const navGroups: NavGroup[] = [
         icon: LayoutDashboard,
         basePath: "/dashboard",
         accessKey: "dashboard",
-        items: [{ label: "Overview", href: "/dashboard" }],
+        items: [
+            { label: "Overview", href: "/dashboard" },
+            { label: "Supply Chain", href: "/traceability" },
+            { label: "Batch Tracking", href: "/traceability/batch" },
+        ],
     },
     {
         label: "Procurement",
@@ -57,6 +64,7 @@ const navGroups: NavGroup[] = [
         basePath: "/farm",
         accessKey: "farm",
         items: [
+            { label: "Lands / Area", href: "/farm/lands" },
             { label: "Batches", href: "/farm/batches" },
             { label: "Daily Log", href: "/farm/daily-log" },
             { label: "Harvest", href: "/farm/harvest" },
@@ -70,6 +78,8 @@ const navGroups: NavGroup[] = [
         items: [
             { label: "Stock", href: "/inventory/stock" },
             { label: "Stock Opname", href: "/inventory/opname" },
+            { label: "Barang Keluar", href: "/inventory/movement" },
+            { label: "Depreciation", href: "/inventory/depreciation" },
         ],
     },
     {
@@ -80,6 +90,18 @@ const navGroups: NavGroup[] = [
         items: [
             { label: "Plan", href: "/production/plan" },
             { label: "Result", href: "/production/result" },
+            { label: "Barcode / ID Karung", href: "/production/barcode" },
+        ],
+    },
+    {
+        label: "R&D",
+        icon: FlaskConical,
+        basePath: "/rnd",
+        accessKey: "rnd",
+        items: [
+            { label: "Dashboard R&D", href: "/rnd" },
+            { label: "Experiments", href: "/rnd/experiments" },
+            { label: "Sample Requests", href: "/rnd/samples" },
         ],
     },
     {
@@ -92,14 +114,28 @@ const navGroups: NavGroup[] = [
             { label: "Upload POD", href: "/logistics/pod" },
         ],
     },
+
     {
-        label: "Traceability",
-        icon: GitBranch,
-        basePath: "/traceability",
-        accessKey: "traceability",
+        label: "Sales / POS",
+        icon: Receipt,
+        basePath: "/sales",
+        accessKey: "sales" as AccessKey,
         items: [
-            { label: "Supply Chain", href: "/traceability" },
-            { label: "Batch Tracking", href: "/traceability/batch" },
+            { label: "Feed Orders", href: "/sales/feed" },
+            { label: "Trading", href: "/sales/trading" },
+        ],
+    },
+    {
+        label: "IT Admin",
+        icon: Settings2,
+        basePath: "/it-admin",
+        accessKey: "it_admin" as AccessKey,
+        items: [
+            { label: "User Management", href: "/it-admin/users" },
+            { label: "Product Kodifikasi", href: "/it-admin/kodifikasi" },
+            { label: "System Settings", href: "/it-admin/settings" },
+            { label: "Audit Log", href: "/it-admin/audit" },
+            { label: "Data Export", href: "/it-admin/export" },
         ],
     },
 ];
@@ -142,7 +178,7 @@ export function Sidebar() {
                 </div>
                 <div>
                     <h1 className="text-lg font-bold tracking-tight text-white">
-                        Hifeed
+                        HiFeed
                     </h1>
                     <p className="text-[10px] font-medium uppercase tracking-[0.2em] text-sidebar-foreground/50">
                         SCOM
@@ -170,7 +206,9 @@ export function Sidebar() {
             {/* Nav Groups */}
             <nav className="flex-1 space-y-1 px-3 overflow-y-auto">
                 {filteredNavGroups.map((group) => {
-                    const isActive = pathname.startsWith(group.basePath);
+                    const isActive =
+                        pathname.startsWith(group.basePath) ||
+                        group.items.some((item) => pathname === item.href);
                     const isExpanded =
                         expandedGroups.includes(group.label) || isActive;
                     const Icon = group.icon;

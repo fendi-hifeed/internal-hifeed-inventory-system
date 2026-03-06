@@ -34,7 +34,7 @@ function getPageTitle(pathname: string): string {
     if (pathname.startsWith("/procurement/po/")) return "Purchase Order Detail";
     if (pathname.startsWith("/farm/batches/")) return "Batch Detail";
     if (pathname.startsWith("/inventory/stock/")) return "Stock Card";
-    return "Hifeed SCOM";
+    return "HiFeed SCOM";
 }
 
 export function Header() {

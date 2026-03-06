@@ -167,16 +167,17 @@ function QuantityFlowBar({ flow }: { flow: QuantityFlow }) {
 type TraceProduct = {
     id: string;
     name: string;
+    displayName: string;
     category: string;
     categoryColor: string;
 };
 
 const traceableProducts: TraceProduct[] = [
-    { id: "p8", name: "Pakan Jadi Layer", category: "Finished Goods", categoryColor: "bg-emerald-500/15 text-emerald-400 border-emerald-500/30" },
-    { id: "p7", name: "Jagung Giling", category: "Raw Material", categoryColor: "bg-amber-500/15 text-amber-400 border-amber-500/30" },
-    { id: "p2", name: "Pakan Ayam Premium", category: "Feed", categoryColor: "bg-blue-500/15 text-blue-400 border-blue-500/30" },
-    { id: "p3", name: "Benih Jagung Super", category: "Seed", categoryColor: "bg-green-500/15 text-green-400 border-green-500/30" },
-    { id: "p1", name: "Obat Cair A", category: "Medicine", categoryColor: "bg-rose-500/15 text-rose-400 border-rose-500/30" },
+    { id: "p9", name: "FG_GC", displayName: "FG_GC — Green Concentrate", category: "Finished Goods", categoryColor: "bg-emerald-500/15 text-emerald-400 border-emerald-500/30" },
+    { id: "p1", name: "DM_CPTN1", displayName: "DM_CPTN1 — CP 25%", category: "Raw Material", categoryColor: "bg-amber-500/15 text-amber-400 border-amber-500/30" },
+    { id: "p10", name: "FG_PEL_C", displayName: "FG_PEL_C — Pellet Complete", category: "Finished Goods", categoryColor: "bg-blue-500/15 text-blue-400 border-blue-500/30" },
+    { id: "p2", name: "DM_CFHP1", displayName: "DM_CFHP1 — CF 30%", category: "Raw Material", categoryColor: "bg-green-500/15 text-green-400 border-green-500/30" },
+    { id: "p5", name: "DM_CPCF1", displayName: "DM_CPCF1 — CP 15%", category: "Raw Material", categoryColor: "bg-rose-500/15 text-rose-400 border-rose-500/30" },
 ];
 
 function buildTraceChain(productId: string): TraceNode[] {
@@ -752,7 +753,7 @@ export default function TraceabilityPage() {
                                         : "border-border/60 bg-background hover:border-primary/40 hover:bg-primary/5 text-muted-foreground hover:text-foreground"
                                         }`}
                                 >
-                                    <span>{p.name}</span>
+                                    <span>{p.displayName}</span>
                                     <Badge variant="outline" className={`text-[9px] px-1.5 py-0 ${p.categoryColor}`}>{p.category}</Badge>
                                 </button>
                             ))}

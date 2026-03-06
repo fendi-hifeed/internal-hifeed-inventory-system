@@ -134,7 +134,7 @@ export default function CreateTripPage() {
                                     <SelectTrigger className="h-9"><SelectValue placeholder="Select" /></SelectTrigger>
                                     <SelectContent>
                                         {products.map((p) => (
-                                            <SelectItem key={p.id} value={p.id}>{p.name}</SelectItem>
+                                            <SelectItem key={p.id} value={p.id}>{p.displayName}</SelectItem>
                                         ))}
                                     </SelectContent>
                                 </Select>

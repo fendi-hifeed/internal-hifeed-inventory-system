@@ -9,7 +9,7 @@ const inter = Inter({
 });
 
 export const metadata: Metadata = {
-  title: "Hifeed SCOM - Supply Chain & Operations Management",
+  title: "HiFeed SCOM - Supply Chain & Operations Management",
   description:
     "Sistem end-to-end yang melacak siklus hidup produk dari pengadaan bahan baku, budidaya, produksi, hingga distribusi.",
 };
