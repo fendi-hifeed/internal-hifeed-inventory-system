@@ -69,8 +69,9 @@ export default function PODetailPage() {
     const isOverThreshold = po.totalAmount > PO_APPROVAL_THRESHOLD;
 
     // Check if current user can approve
+    const isUnderThreshold = po.totalAmount <= PO_APPROVAL_THRESHOLD;
     const canApproveL1 =
-        user?.role === "FINANCE" &&
+        (user?.role === "FINANCE" || (user?.role === "OWNER" && isUnderThreshold)) &&
         po.approvals.find((a) => a.level === 1)?.status === "PENDING";
     const canApproveL2 =
         user?.role === "OWNER" &&

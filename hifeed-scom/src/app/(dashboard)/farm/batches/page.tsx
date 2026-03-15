@@ -1,11 +1,19 @@
 "use client";
 
 import Link from "next/link";
-import { Card, CardContent } from "@/components/ui/card";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
 import { Progress } from "@/components/ui/progress";
+import {
+    Select,
+    SelectContent,
+    SelectItem,
+    SelectTrigger,
+    SelectValue,
+} from "@/components/ui/select";
 import {
     Search,
     Plus,
@@ -14,8 +22,9 @@ import {
     Calendar,
     MapPin,
     Activity,
+    Leaf,
 } from "lucide-react";
-import { farmBatches } from "@/data/mock-data";
+import { farmBatches, farmLands, products } from "@/data/mock-data";
 import { useState } from "react";
 
 const statusColors: Record<string, string> = {
@@ -36,8 +45,11 @@ const statusLabels: Record<string, string> = {
     WRITE_OFF: "Write Off",
 };
 
+const plantableProducts = products.filter(p => ["DM_CPTN1", "DM_CFHP1"].includes(p.internalCode));
+
 export default function FarmBatchesPage() {
     const [search, setSearch] = useState("");
+    const [showForm, setShowForm] = useState(false);
 
     const filtered = farmBatches.filter(
         (b) =>
@@ -53,11 +65,93 @@ export default function FarmBatchesPage() {
                 <p className="text-sm text-muted-foreground">
                     Track all farm batches from seeding to harvest
                 </p>
-                <Button className="gap-2 rounded-xl shadow-sm cursor-pointer">
+                <Button onClick={() => setShowForm(!showForm)} className="gap-2 rounded-xl shadow-sm cursor-pointer">
                     <Plus className="h-4 w-4" />
                     New Batch
                 </Button>
             </div>
+
+            {/* New Batch Form */}
+            {showForm && (
+                <Card className="border-0 shadow-sm border-l-4 border-l-violet-500 animate-fade-in-up">
+                    <CardHeader className="pb-2">
+                        <CardTitle className="text-sm flex items-center gap-2">
+                            <Sprout className="h-4 w-4 text-violet-600" />
+                            Buat Batch Baru
+                        </CardTitle>
+                    </CardHeader>
+                    <CardContent className="space-y-4">
+                        <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+                            <div className="space-y-1.5">
+                                <Label className="text-xs">Lahan *</Label>
+                                <Select>
+                                    <SelectTrigger><SelectValue placeholder="Pilih lahan" /></SelectTrigger>
+                                    <SelectContent>
+                                        {farmLands.map(l => (
+                                            <SelectItem key={l.id} value={l.id}>
+                                                {l.name} ({l.location}) — {l.areaHa} Ha
+                                            </SelectItem>
+                                        ))}
+                                    </SelectContent>
+                                </Select>
+                            </div>
+                            <div className="space-y-1.5">
+                                <Label className="text-xs">Jenis Tanaman *</Label>
+                                <Select>
+                                    <SelectTrigger><SelectValue placeholder="Pilih tanaman" /></SelectTrigger>
+                                    <SelectContent>
+                                        {plantableProducts.map(p => (
+                                            <SelectItem key={p.id} value={p.internalCode}>{p.displayName}</SelectItem>
+                                        ))}
+                                    </SelectContent>
+                                </Select>
+                            </div>
+                            <div className="space-y-1.5">
+                                <Label className="text-xs">Sumber Bibit *</Label>
+                                <Select>
+                                    <SelectTrigger><SelectValue placeholder="Pilih sumber" /></SelectTrigger>
+                                    <SelectContent>
+                                        <SelectItem value="INTERNAL">Dari Biji Internal (deduct inventory biji)</SelectItem>
+                                        <SelectItem value="PO">Dari PO / Beli (link ke PO number)</SelectItem>
+                                    </SelectContent>
+                                </Select>
+                            </div>
+                        </div>
+                        <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+                            <div className="space-y-1.5">
+                                <Label className="text-xs">Initial Qty (Bibit)</Label>
+                                <Input type="number" placeholder="Misal: 5000" />
+                            </div>
+                            <div className="space-y-1.5">
+                                <Label className="text-xs">Tanggal Tanam *</Label>
+                                <Input type="date" />
+                            </div>
+                            <div className="space-y-1.5">
+                                <Label className="text-xs">Fase Awal</Label>
+                                <Select>
+                                    <SelectTrigger><SelectValue placeholder="Pilih fase" /></SelectTrigger>
+                                    <SelectContent>
+                                        <SelectItem value="NURSERY">Nursery (Pembibitan)</SelectItem>
+                                        <SelectItem value="GROWING">Growing (Tanam Langsung)</SelectItem>
+                                    </SelectContent>
+                                </Select>
+                            </div>
+                        </div>
+                        <div className="rounded-lg bg-violet-50 border border-violet-200 p-3">
+                            <p className="text-xs text-violet-800">
+                                🌱 <strong>Sumber Bibit:</strong> Jika "Dari Biji Internal", sistem akan mengurangi stok biji dari inventory. Jika "Dari PO", batch akan di-link ke nomor PO pembelian bibit.
+                            </p>
+                        </div>
+                        <div className="flex justify-end gap-2">
+                            <Button variant="outline" onClick={() => setShowForm(false)} className="cursor-pointer">Batal</Button>
+                            <Button className="cursor-pointer gap-2">
+                                <Sprout className="h-4 w-4" />
+                                Buat Batch
+                            </Button>
+                        </div>
+                    </CardContent>
+                </Card>
+            )}
 
             {/* Search */}
             <div className="relative max-w-md">

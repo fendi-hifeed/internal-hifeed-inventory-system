@@ -92,9 +92,14 @@ function getPendingApprovals(
     if (!role) return { canApproveL1: false, canApproveL2: false };
     const l1 = po.approvals.find((a) => a.level === 1);
     const l2 = po.approvals.find((a) => a.level === 2);
+    const isUnderThreshold = po.totalAmount <= PO_APPROVAL_THRESHOLD;
 
     return {
-        canApproveL1: role === "FINANCE" && l1?.status === "PENDING",
+        // Finance can always approve L1; Owner can also approve L1 for POs ≤ 50M
+        canApproveL1:
+            (role === "FINANCE" || (role === "OWNER" && isUnderThreshold)) &&
+            l1?.status === "PENDING",
+        // Owner approves L2 for POs > 50M (after Finance L1 approved)
         canApproveL2:
             role === "OWNER" &&
             l1?.status === "APPROVED" &&
@@ -427,10 +432,10 @@ export default function PurchaseOrdersPage() {
                                 Aturan Approval PO
                             </p>
                             <p>
-                                • PO ≤ <strong>Rp 50 Juta</strong>: Cukup 1 layer approval (Finance Admin)
+                                • PO ≤ <strong>Rp 50 Juta</strong>: Cukup 1 layer approval (Finance Admin <strong>ATAU</strong> Owner)
                             </p>
                             <p>
-                                • PO &gt; <strong>Rp 50 Juta</strong>: Harus 2 layer approval (Finance Admin <strong>DAN</strong> Owner)
+                                • PO &gt; <strong>Rp 50 Juta</strong>: Harus 2 layer approval (Finance Admin L1 <strong>DAN</strong> Owner L2)
                             </p>
                             <p>
                                 • Semua departemen bisa membuat PO, tapi hanya Finance Admin & Owner yang bisa approve

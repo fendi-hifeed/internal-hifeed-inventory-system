@@ -4,6 +4,14 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import {
+    Select,
+    SelectContent,
+    SelectItem,
+    SelectTrigger,
+    SelectValue,
+} from "@/components/ui/select";
 import {
     Plus,
     Search,
@@ -28,6 +36,7 @@ const statusConfig = {
 
 export default function FarmLandsPage() {
     const [search, setSearch] = useState("");
+    const [showForm, setShowForm] = useState(false);
 
     const filtered = farmLands.filter(
         (l) =>
@@ -46,11 +55,87 @@ export default function FarmLandsPage() {
                 <p className="text-sm text-muted-foreground">
                     Mapping lahan pertanian — data area, lokasi, jenis tanah, dan batch tanam yang aktif di tiap lahan.
                 </p>
-                <Button className="gap-2 rounded-xl shadow-sm cursor-pointer">
+                <Button onClick={() => setShowForm(!showForm)} className="gap-2 rounded-xl shadow-sm cursor-pointer">
                     <Plus className="h-4 w-4" />
                     Tambah Lahan
                 </Button>
             </div>
+
+            {/* Add Land Form */}
+            {showForm && (
+                <Card className="border-0 shadow-sm border-l-4 border-l-emerald-500 animate-fade-in-up">
+                    <CardHeader className="pb-2">
+                        <CardTitle className="text-sm flex items-center gap-2">
+                            <Mountain className="h-4 w-4 text-emerald-600" />
+                            Tambah Lahan Baru
+                        </CardTitle>
+                    </CardHeader>
+                    <CardContent className="space-y-4">
+                        <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+                            <div className="space-y-1.5">
+                                <Label className="text-xs">Nama Lahan *</Label>
+                                <Input placeholder="Misal: Lahan Canggu B" />
+                            </div>
+                            <div className="space-y-1.5">
+                                <Label className="text-xs">Lokasi *</Label>
+                                <Input placeholder="Misal: Canggu, Lampung" />
+                            </div>
+                            <div className="space-y-1.5">
+                                <Label className="text-xs">Luas (m²) *</Label>
+                                <Input type="number" placeholder="5000" />
+                            </div>
+                        </div>
+                        <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+                            <div className="space-y-1.5">
+                                <Label className="text-xs">Jenis Tanah</Label>
+                                <Select>
+                                    <SelectTrigger><SelectValue placeholder="Pilih jenis tanah" /></SelectTrigger>
+                                    <SelectContent>
+                                        <SelectItem value="Latosol">Latosol</SelectItem>
+                                        <SelectItem value="Andosol">Andosol</SelectItem>
+                                        <SelectItem value="Alluvial">Alluvial</SelectItem>
+                                        <SelectItem value="Regosol">Regosol</SelectItem>
+                                    </SelectContent>
+                                </Select>
+                            </div>
+                            <div className="space-y-1.5">
+                                <Label className="text-xs">Sumber Air</Label>
+                                <Select>
+                                    <SelectTrigger><SelectValue placeholder="Pilih sumber air" /></SelectTrigger>
+                                    <SelectContent>
+                                        <SelectItem value="Irigasi">Irigasi</SelectItem>
+                                        <SelectItem value="Tadah Hujan">Tadah Hujan</SelectItem>
+                                        <SelectItem value="Sungai">Sungai</SelectItem>
+                                        <SelectItem value="Sumur Bor">Sumur Bor</SelectItem>
+                                    </SelectContent>
+                                </Select>
+                            </div>
+                            <div className="space-y-1.5">
+                                <Label className="text-xs">Status Awal</Label>
+                                <Select>
+                                    <SelectTrigger><SelectValue placeholder="Pilih status" /></SelectTrigger>
+                                    <SelectContent>
+                                        <SelectItem value="PREPARATION">Preparation</SelectItem>
+                                        <SelectItem value="ACTIVE">Active</SelectItem>
+                                        <SelectItem value="RESTING">Resting</SelectItem>
+                                    </SelectContent>
+                                </Select>
+                            </div>
+                        </div>
+                        <div className="space-y-1.5">
+                            <Label className="text-xs">Catatan</Label>
+                            <Input placeholder="Catatan tentang lahan..." />
+                        </div>
+                        <div className="flex justify-end gap-2">
+                            <Button variant="outline" onClick={() => setShowForm(false)} className="cursor-pointer">Batal</Button>
+                            <Button className="cursor-pointer gap-2">
+                                <Mountain className="h-4 w-4" />
+                                Simpan Lahan
+                            </Button>
+                        </div>
+                    </CardContent>
+                </Card>
+            )}
 
             {/* Summary Cards */}
             <div className="grid grid-cols-2 md:grid-cols-4 gap-3">

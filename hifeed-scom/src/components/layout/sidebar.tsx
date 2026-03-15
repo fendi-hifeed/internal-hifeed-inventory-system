@@ -65,6 +65,7 @@ const navGroups: NavGroup[] = [
         accessKey: "farm",
         items: [
             { label: "Lands / Area", href: "/farm/lands" },
+            { label: "Seeds / Biji", href: "/farm/seeds" },
             { label: "Batches", href: "/farm/batches" },
             { label: "Daily Log", href: "/farm/daily-log" },
             { label: "Harvest", href: "/farm/harvest" },
@@ -121,8 +122,8 @@ const navGroups: NavGroup[] = [
         basePath: "/sales",
         accessKey: "sales" as AccessKey,
         items: [
-            { label: "Feed Orders", href: "/sales/feed" },
-            { label: "Trading", href: "/sales/trading" },
+            { label: "Sales Orders", href: "/sales/feed" },
+            { label: "Account Receivable", href: "/sales/ar" },
         ],
     },
     {

@@ -73,6 +73,7 @@ export default function UserManagementPage() {
     const [statusFilter, setStatusFilter] = useState("ALL");
     const [editingUserId, setEditingUserId] = useState<string | null>(null);
     const [users, setUsers] = useState(managedUsers);
+    const [showForm, setShowForm] = useState(false);
 
     const filtered = users.filter((u) => {
         const matchSearch =
@@ -231,13 +232,61 @@ export default function UserManagementPage() {
                                 </SelectItem>
                             </SelectContent>
                         </Select>
-                        <Button className="gap-2 cursor-pointer">
+                        <Button onClick={() => setShowForm(!showForm)} className="gap-2 cursor-pointer">
                             <UserPlus className="h-4 w-4" />
                             Add User
                         </Button>
                     </div>
                 </CardContent>
             </Card>
+
+            {/* Add User Form */}
+            {showForm && (
+                <Card className="border-0 shadow-sm border-l-4 border-l-primary animate-fade-in-up">
+                    <CardHeader className="pb-2">
+                        <CardTitle className="text-sm flex items-center gap-2">
+                            <UserPlus className="h-4 w-4 text-primary" />
+                            Tambah User Baru (Email Mapping)
+                        </CardTitle>
+                    </CardHeader>
+                    <CardContent className="space-y-4">
+                        <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+                            <div className="space-y-1.5">
+                                <label className="text-xs font-medium">Nama Lengkap *</label>
+                                <Input placeholder="Misal: Budi Santoso" />
+                            </div>
+                            <div className="space-y-1.5">
+                                <label className="text-xs font-medium">Email Google (@hifeed.co) *</label>
+                                <Input placeholder="budi@hifeed.co" />
+                            </div>
+                            <div className="space-y-1.5">
+                                <label className="text-xs font-medium">Assign Role *</label>
+                                <Select>
+                                    <SelectTrigger><SelectValue placeholder="Pilih Role" /></SelectTrigger>
+                                    <SelectContent>
+                                        {allRoles.map((r) => (
+                                            <SelectItem key={r} value={r}>{roleLabels[r]}</SelectItem>
+                                        ))}
+                                    </SelectContent>
+                                </Select>
+                            </div>
+                        </div>
+                        <div className="rounded-lg bg-blue-50 border border-blue-200 p-3 flex gap-2">
+                            <Shield className="h-4 w-4 text-blue-600 shrink-0 mt-0.5" />
+                            <p className="text-xs text-blue-800">
+                                <strong>Catatan SSO:</strong> User tidak memerlukan password. Setelah data disimpan, sistem akan mengizinkan email tersebut login menggunakan "Sign in with Google".
+                            </p>
+                        </div>
+                        <div className="flex justify-end gap-2">
+                            <Button variant="outline" onClick={() => setShowForm(false)} className="cursor-pointer">Batal</Button>
+                            <Button className="cursor-pointer gap-2">
+                                <CheckCircle2 className="h-4 w-4" />
+                                Simpan Mapping
+                            </Button>
+                        </div>
+                    </CardContent>
+                </Card>
+            )}
 
             {/* Users Table */}
             <Card className="border-0 shadow-sm overflow-hidden">
