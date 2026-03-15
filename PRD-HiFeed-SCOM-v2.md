@@ -1,15 +1,19 @@
-# Product Requirements Document (PRD) v3.0
+# Product Requirements Document (PRD) v3.1
 ## HiFeed Supply Chain Operations Management (SCOM)
 
-**Versi**: 3.0 — Updated 6 Maret 2026
+**Versi**: 3.1 — Updated 15 Maret 2026
 **Penulis**: Fendy Irfan (Tech Lead)
-**Reviewer**: Ihsan (Owner/Director), Dania (Finance), Arif (Agronomis)
-**Status**: Active — Backend Integrated
+**Reviewer**: Ihsan (Owner/Director), Dania (Finance), Arif (Agronomis), Naura (Research Analyst)
+**Status**: Active — Mockup Complete + Carbon Impact Dashboard
 
 ---
 
 > [!IMPORTANT]
-> Dokumen ini adalah **update major** dari PRD v2.0 → v3.0. Sistem telah diintegrasikan dengan backend (Django + PostgreSQL + Google SSO). Semua modul yang tercantum sudah **fully implemented dan production-ready**.
+> Dokumen ini adalah **update** dari PRD v3.0 → v3.1 (15 Maret 2026). Perubahan utama:
+> - ✅ **Carbon Impact Dashboard** (`/carbon`) — tracking jejak karbon hulu-hilir untuk investor pitch
+> - ✅ **Account Receivable Dashboard** (`/sales/ar`) — tracking piutang klien
+> - ✅ **Inline Forms** — Tambah Lahan, New Batch, New Order, Add User (tanpa pindah halaman)
+> - ✅ **Updated Approval Logic** — Owner bisa approve PO ≤50 juta sebagai backup Finance
 
 ---
 
@@ -28,9 +32,10 @@
 11. [Modul Sales / POS](#11-modul-sales--pos)
 12. [Modul IT Admin](#12-modul-it-admin)
 13. [Traceability & Supply Chain](#13-traceability--supply-chain)
-14. [Data Architecture & ERD](#14-data-architecture--erd)
-15. [Technical Architecture](#15-technical-architecture)
-16. [Implementation Roadmap](#16-implementation-roadmap)
+14. [Carbon Impact Dashboard](#14-carbon-impact-dashboard-) 🆕
+15. [Data Architecture & ERD](#15-data-architecture--erd)
+16. [Technical Architecture](#16-technical-architecture)
+17. [Implementation Roadmap](#17-implementation-roadmap)
 
 ---
 
@@ -38,20 +43,22 @@
 
 HiFeed SCOM adalah portal internal untuk mengelola seluruh rantai pasok operasional HiFeed: dari pembelian bahan baku (Procurement), pengelolaan lahan (Farm), produksi pakan (Production), hingga pengiriman ke customer (Logistics) dan penjualan (Sales/POS). Sistem ini dibangun dengan prinsip **full traceability** — setiap karung produk dapat dilacak ke batch, supplier, dan lahan asalnya melalui barcode unik.
 
-### Scope Modul (10 Modul)
+### Scope Modul (11 Modul)
 
-| # | Modul | Deskripsi |
-|---|---|---|
-| 1 | **Dashboard** | KPI overview (role-based), Charts, Alerts, Supply Chain, Batch Tracking |
-| 2 | **Procurement** | PO, GRN, Approval multi-layer, Term of Payment |
-| 3 | **Inventory** | 3-cluster stock (RM, FG, Trading), Stock Ledger, Opname, **Barang Keluar (Movement Flagging)**, **Depreciation Tracking** |
-| 4 | **Farm Management** | **Land/Area Mapping**, Batch planting, Daily Log, Mortality tracking, Harvest |
-| 5 | **Production** | BOM, Production Run, **Monthly Targets**, **Barcode per Karung**, IoT mesin |
-| 6 | **R&D** | Sample request, Experiment tracking, Test results, Budget/pagu control |
-| 7 | **Logistics** | Delivery Trip, POD upload |
-| 8 | **Sales / POS** | Feed Orders (produk jadi), Trading Commodities |
-| 9 | **IT Admin** | Product Kodifikasi, User Management, Data Export, System Settings, Audit Log |
-| 10 | **Traceability** | Supply Chain visualization, Batch Tracking (terintegrasi di Dashboard) |
+| # | Modul | Deskripsi | Halaman |
+|---|---|---|---:|
+| 1 | **Dashboard** | KPI overview (role-based), Charts, Alerts, Supply Chain, Batch Tracking, **Carbon Bank Widget** | 4 |
+| 2 | **Procurement** | PO, GRN, Approval multi-layer, Term of Payment | 4 |
+| 3 | **Inventory** | 3-cluster stock (RM, FG, Trading), Stock Ledger, Opname, **Barang Keluar (Movement Flagging)**, **Depreciation Tracking** | 5 |
+| 4 | **Farm Management** | **Land/Area Mapping (inline form)**, Batch planting **(inline form)**, Daily Log, Mortality tracking, Harvest, Seeds | 6 |
+| 5 | **Production** | BOM, Production Run, **Monthly Targets**, **Barcode per Karung**, IoT mesin | 3 |
+| 6 | **R&D** | Sample request, Experiment tracking, Test results, Budget/pagu control | 3 |
+| 7 | **Logistics** | Delivery Trip (+ create form), POD upload | 3 |
+| 8 | **Sales / POS** | Feed + Trading Orders **(unified, inline form)**, **Account Receivable (AR)** | 2 |
+| 9 | **IT Admin** | Product Kodifikasi, User Management **(inline form)**, Data Export, System Settings, Audit Log | 5 |
+| 10 | **Traceability** | Supply Chain visualization, Batch Tracking (terintegrasi di Dashboard) | 2 |
+| 11 | **Carbon Impact** 🆕 | **Carbon Bank Dashboard** — dual pillar formula, dynamic variables, investor summary | 1 |
+| | | **Total Halaman** | **37** |
 
 ---
 
@@ -151,13 +158,16 @@ Setiap alert di-tag dengan `module` (farm, procurement, inventory, production, l
 
 ### 3.5 Dashboard Sub-Menu
 
-Dashboard module berisi 3 sub-page:
+Dashboard module berisi 4 sub-page:
 
 | Page | Path | Deskripsi |
 |---|---|---|
-| **Overview** | `/dashboard` | KPI cards, charts, metrics, alerts |
+| **Overview** | `/dashboard` | KPI cards, charts, metrics, alerts, **Carbon Bank mini-widget** |
 | **Supply Chain** | `/traceability` | Visualisasi supply chain end-to-end |
 | **Batch Tracking** | `/traceability/batch` | Lacak journey per batch dari farm ke customer |
+| **Carbon Impact** 🆕 | `/carbon` | Carbon Bank Dashboard (detail di Section 14) |
+
+> Carbon Bank widget di halaman Overview menampilkan total tCO₂e saved secara ringkas, dengan link ke halaman `/carbon` untuk detail lengkap. Visible untuk role: Owner, IT Ops, Finance, RND.
 
 ---
 
@@ -419,6 +429,8 @@ Harus sinkron dengan working paper Accounting.
 #### Halaman Lands (`/farm/lands`)
 
 - **4 stat cards**: Total Lahan, Total Area (Ha), Lahan Active, Batch Aktif
+- **Inline form "Tambah Lahan"** 🆕 — klik tombol "Tambah Lahan" memunculkan form di halaman yang sama:
+  - Nama Lahan, Lokasi, Luas Area (m²), Jenis Tanah (Latosol/Andosol/Regosol/Vulkanik), Sumber Air, Status awal
 - **Land cards**: setiap lahan menampilkan area (Ha + m²), jenis tanah, sumber air, status, batch aktif
 - **Link ke batch**: jika ada batch aktif, menampilkan batch code, product, dan HST
 
@@ -428,6 +440,8 @@ Harus sinkron dengan working paper Accounting.
 - Batch harus **memilih lahan** dari daftar lahan yang tersedia saat dibuat
 - Batch melacak: lokasi, tanggal tanam, initial qty, current qty, HST (Hari Setelah Tanam)
 - QR Code fisik tahan air ditempel di lahan
+- **Inline form "New Batch"** 🆕 — klik tombol "New Batch" memunculkan form:
+  - Pilih Lahan, Jenis Tanaman (dari kodifikasi), Sumber Bibit (Internal/PO Baru), Initial Qty, Tanggal Mulai, Fase Awal (Nursery/Growing)
 
 ### 7.3 Daily Log
 
@@ -626,45 +640,63 @@ flowchart TD
 
 ## 11. Modul Sales / POS
 
-### 11.1 Feed Orders (Produk Jadi Feed)
+> [!IMPORTANT]
+> Feed dan Trading orders telah **digabungkan** dalam satu halaman `/sales/feed` karena keduanya melewati proses PO yang sama.
 
-Halaman `/sales/feed` untuk tracking penjualan produk pakan jadi. Mencakup >30 field:
+### 11.1 Sales Orders (Feed + Trading) — Unified
 
-| Kategori | Fields |
+Halaman `/sales/feed` untuk tracking **semua** penjualan — baik produk pakan jadi (Feed) maupun komoditas beli-putus (Trading).
+
+#### Sumber Data per Kolom
+
+| Kolom | Sumber | Keterangan |
+|---|---|---|
+| **Order ID** | 🤖 Auto-generate | Format: `ORD-2026-XXX` (Feed) / `TRD-2026-XXX` (Trading) |
+| **Type** | 📝 Input Sales | Feed atau Trading |
+| **Status** | 📝 Update Sales | Lead → Confirmed → Shipped → Delivered → Paid / Overdue |
+| **Customer & Area** | 📝 Input Sales | Data pelanggan |
+| **SKU** | 📝 Pilih dari master | Produk dari katalog kodifikasi |
+| **Qty (KG)** | 📝 Input Sales | Volume pesanan |
+| **Price/KG** | 📝 Input Sales | Harga jual per KG (hasil negosiasi) |
+| **Cost/KG** | 🤖 Tarik otomatis | HPP dari Inventory + Logistics. Untuk Trading: dari Buy Price PO |
+| **Total Price** | 🤖 Kalkulasi | Qty × Price/KG |
+| **Total Cost** | 🤖 Kalkulasi | Qty × Cost/KG |
+| **Margin/KG** | 🤖 Kalkulasi | Price/KG − Cost/KG |
+| **Margin %** | 🤖 Kalkulasi | (Total Price − Total Cost) / Total Price × 100 |
+| **GP Total** | 🤖 Kalkulasi | Total Price − Total Cost |
+| **No. PO** | 📝 Input / link | Referensi PO terkait |
+| **Type Payment** | 📝 Input Sales | COD, NET14, NET30, DP+Full |
+| **No. Invoice** | 📝 Input Finance | Nomor invoice yang dikeluarkan |
+| **Invoice Paid** | 📝 Update Finance | Status pembayaran |
+| **Date Overdue** | 🤖 Kalkulasi | Tanggal jatuh tempo berdasarkan payment type |
+
+> 📝 = Input manual, 🤖 = Otomatis dari sistem
+
+**Inline Form "New Order"** 🆕 — klik tombol "New Order" memunculkan form di halaman:
+- Pilih Order Type (Feed/Trading), Customer, SKU, Qty, Selling Price/KG, Payment Type
+
+Dashboard widgets: Total Revenue, GP Total, Total Volume, Avg Margin %, Overdue Alerts.
+
+### 11.2 Account Receivable (AR) — `/sales/ar`
+
+> [!IMPORTANT]
+> Dashboard khusus untuk melacak **piutang klien** beserta aging analysis.
+
+Halaman `/sales/ar` menampilkan:
+- **3 stat cards**: Total AR Outstanding, Overdue Amount, Collection Rate
+- **AR Aging Breakdown**: Current (0-30 hari), 31-60 hari, 61-90 hari, >90 hari
+- **Client-level AR table**: per customer — total piutang, invoices outstanding, last payment date, aging status
+- **Payment history log**: setiap pembayaran yang masuk tercatat dengan tanggal, jumlah, dan sisa piutang
+
+#### AR Status Flow
+
+| Status | Trigger |
 |---|---|
-| **Order Info** | ETA Month, Status, Order ID, Lead ID |
-| **Customer** | Leads Name, Alamat Kirim, No. HP, Kabupaten, Kecamatan |
-| **Product** | SKU, Qty Order (KG), Selling Price/kg, Total Price |
-| **Fulfillment** | Fulfillment Type, PIC Sales, PIC Procurement |
-| **Supplier** | Lead ID Supplier, Supplier Name, Supply ID, Supplier Area |
-| **Cost** | RM Cost/kg, Logistic Cost/kg, Total Cost, Logistic Type |
-| **Financial** | Estimasi Margin/kg, Margin %, No. PO, Type Payment |
-| **Payment** | Down Payment, Full Payment, Invoice Posted/Paid, Date Overdue |
-| **Documents** | Document (GDrive link), Bukti TF (GDrive link) |
-| **Tracking** | Qty SJ/Qty PO, Qty RR, Qty Invoiced, Amount Invoiced, No INV |
-| **Logistics** | Report Bukti TRF, Value Logistic Cost, GP Total |
-
-Dashboard widgets: Revenue, GP, Qty, Margin, Overdue count, Pipeline by status.
-
-### 11.2 Trading Commodities
-
-Halaman `/sales/trading` untuk tracking beli-jual komoditas (HiFeed beli langsung jual — tanpa produksi).
-
-**Flow**: `Supplier → HiFeed (Trading) → Customer`
-
-| Field | Keterangan |
-|---|---|
-| Trading ID | Auto-generated |
-| Commodity | Nama komoditas yang ditradingkan |
-| Buy Price/KG | Harga beli per KG |
-| Sell Price/KG | Harga jual per KG |
-| Qty (KG) | Volume |
-| Total Buy Cost | Buy price × Qty |
-| Total Sell Revenue | Sell price × Qty |
-| Logistics Cost | Biaya pengiriman |
-| Gross Profit | Sell revenue - buy cost - logistics |
-| Margin % | GP / sell revenue × 100 |
-| Payment Status | `PENDING`, `PAID`, `OVERDUE` |
+| `CURRENT` | Invoice belum jatuh tempo |
+| `OVERDUE_30` | Lewat 30 hari dari due date |
+| `OVERDUE_60` | Lewat 60 hari |
+| `OVERDUE_90` | Lewat 90 hari → **escalation ke Owner** |
+| `PAID` | Pembayaran lunas |
 
 ---
 
@@ -675,7 +707,7 @@ Halaman `/sales/trading` untuk tracking beli-jual komoditas (HiFeed beli langsun
 | Sub-modul | Path | Deskripsi | Role |
 |---|---|---|---|
 | **Product Kodifikasi** | `/it-admin/kodifikasi` | Kelola mapping internal code ↔ external code ↔ secret name | Owner, IT Ops |
-| **User Management** | `/it-admin/users` | CRUD user, assign role, reset password | Owner, IT Ops |
+| **User Management** | `/it-admin/users` | CRUD user, assign role, **inline Add User form** (email mapping untuk SSO) | Owner, IT Ops |
 | **System Settings** | `/it-admin/settings` | Konfigurasi parameter sistem (approval threshold, pagu R&D, dll) | Owner, IT Ops |
 | **Data Export** | `/it-admin/export` | Export data untuk investor/eksternal (otomatis translate ke external code) | Owner, IT Ops |
 | **Audit Log** | `/it-admin/audit` | Lihat semua aktivitas user (login, create, edit, delete, approve) | Owner, IT Ops |
@@ -719,9 +751,87 @@ Traceability menu ada di bawah Dashboard, accessible untuk semua role kecuali Lo
 
 ---
 
-## 14. Data Architecture & ERD
+## 14. Carbon Impact Dashboard 🆕
 
-### 14.1 Schema Tables
+> [!IMPORTANT]
+> Modul ini ditujukan untuk **pitching ke investor**. Seluruh angka harus bisa diverifikasi dan variabel yang digunakan harus transparan serta bisa diubah tanpa perlu coding ulang.
+
+### 14.1 Konsep: Dual Pillar Carbon Impact
+
+Setiap 1 ton produk HiFeed yang terjual menghasilkan dampak karbon positif sebesar **0.7295 tCO₂e**, yang terdiri dari dua pilar:
+
+| Pilar | Nama | Nilai | Sumber Data | Warna UI |
+|---|---|---|---|---|
+| 1 | **Enteric Methane Reduction** (Hilir) | 0.3771 tCO₂e/ton | Sales POS (total ton terjual) | 🔵 Biru |
+| 2 | **Carbon Sequestration** (Hulu) | 0.3524 tCO₂e/ton | Farm Lands (total Ha aktif) | 🟢 Hijau |
+| | **TOTAL** | **0.7295 tCO₂e/ton** | | |
+
+### 14.2 Formula Detail
+
+#### Pilar 1 — Enteric Methane Reduction
+```
+Konsumsi harian          = 3 kg/ekor/hari
+Konsumsi tahunan         = 3 × 365 = 1,095 kg = 1.095 ton/ekor/tahun
+Reduksi emisi per ekor   = 0.413 tCO₂e/tahun
+Per ton produk           = 0.413 / 1.095 = 0.3771 tCO₂e
+```
+
+#### Pilar 2 — Carbon Sequestration
+```
+Fresh yield              = 15 ton/ha × 4 panen = 60 ton/ha/tahun
+Dry weight               = 60 × 33% = 19.8 ton
+After spoilage (14%)     = 19.8 × 86% = 17.028 ton
+Product output (GC 30%)  = 17.028 / 30% = 56.76 ton GC/ha/tahun
+Sequestration per Ha     = 20 tCO₂e/ha/tahun
+Per ton produk           = 20 / 56.76 = 0.3524 tCO₂e
+```
+
+### 14.3 Dynamic Variables (8 Konstanta)
+
+Owner dan RND dapat mengubah konstanta berikut langsung di halaman `/carbon` (section "Formula Variables"). Setelah diubah, seluruh dashboard auto-recalculate:
+
+| Variable | Default | Unit | Keterangan |
+|---|---|---|---|
+| Daily Consumption / Cattle | 3 | kg/hari | Konsumsi pakan per ekor per hari |
+| Emission Reduction Baseline | 0.413 | tCO₂e/tahun | Reduksi emisi per ekor per tahun |
+| Dry Weight Conversion | 0.33 | rasio | Persentase berat kering (33%) |
+| Spoilage Rate | 0.14 | rasio | Tingkat kehilangan (14%) — **idealnya dinamis dari Stock Opname** |
+| Indigofera Formula Ratio | 0.30 | rasio | Persentase Indigofera dalam produk GC |
+| Carbon Sequestration / Ha | 20 | tCO₂e/ha/thn | Karbon yang diserap per hektar per tahun |
+| Fresh Yield / Ha / Harvest | 15 | ton | Hasil panen basah per hektar per panen |
+| Harvests / Year | 4 | ×/tahun | Jumlah panen per tahun |
+
+### 14.4 Halaman Carbon (`/carbon`)
+
+| Section | UI | Keterangan |
+|---|---|---|
+| **Hero** | Gradient card hijau-biru | Angka raksasa tCO₂e saved, equivalen pohon, Magic Number badge |
+| **Dual Pillars** | 2 kartu berdampingan | Biru (Enteric) + Hijau (Sequestration) dengan step-by-step formula |
+| **Trend Chart** | Stacked area chart | Monthly carbon impact (Recharts), hijau di bawah + biru di atas |
+| **Dynamic Variables** | 2-col grid | 8 konstanta, editable oleh Owner/RND |
+| **Investor Summary** | Card + pie chart | "For every 1 ton → 0.7295 tCO₂e" dengan breakdown pie |
+
+### 14.5 Dashboard Widget
+
+Di halaman Overview (`/dashboard`), terdapat mini-card "Carbon Bank" yang menampilkan:
+- Total tCO₂e saved (angka)
+- Magic number per ton
+- Link ke `/carbon`
+
+Visible untuk: **Owner, IT Ops, Finance, RND**
+
+### 14.6 Akses
+
+| Aksi | Role |
+|---|---|
+| View Carbon Dashboard | Owner, IT Ops, Finance, RND |
+| Edit Dynamic Variables | Owner, RND |
+
+---
+
+## 15. Data Architecture & ERD
+
+### 15.1 Schema Tables
 
 #### `purchase_orders`
 ```sql
@@ -821,7 +931,7 @@ reason          TEXT
 approved_at     TIMESTAMP
 ```
 
-### 14.2 ERD Diagram
+### 15.2 ERD Diagram
 
 ```mermaid
 erDiagram
@@ -864,16 +974,16 @@ erDiagram
 
 ---
 
-## 15. Technical Architecture
+## 16. Technical Architecture
 
-### 15.1 Frontend
+### 16.1 Frontend
 - **Framework**: Next.js 16 + React 19
 - **UI Library**: shadcn/ui
 - **Charts**: Recharts
 - **State**: React Context (Auth)
 - **Auth**: Google SSO restricted to `@hifeed.co`
 
-### 15.2 Backend
+### 16.2 Backend
 - **Framework**: Python Django + Django REST Framework
 - **Database**: PostgreSQL 16
 - **Auth**: Google OAuth2 → JWT tokens
@@ -881,7 +991,7 @@ erDiagram
 - **IoT**: MQTT/WebSocket → Cloud ingestion pipeline
 - **Barcode**: Generate QR/Barcode images, thermal printer support
 
-### 15.3 Non-Functional Requirements
+### 16.3 Non-Functional Requirements
 - Full online system (internet stabil)
 - Audit trail: log user, timestamp, IP, action
 - Wajib upload foto bukti fisik (timbangan, surat jalan, barang rusak)
@@ -891,7 +1001,7 @@ erDiagram
 
 ---
 
-## 16. Implementation Roadmap
+## 17. Implementation Roadmap
 
 ### Phase 1: Foundation & Core ✅
 - [x] Setup repo, Docker, PostgreSQL, project structure
@@ -951,3 +1061,26 @@ erDiagram
 - [x] Supply Chain visualization
 - [x] Batch Tracking
 - [x] Real-time alerts per module per role
+
+### Phase 11: Sales Enhancements ✅ 🆕
+- [x] Unified Feed + Trading Orders (single page `/sales/feed`)
+- [x] Inline "New Order" form
+- [x] Account Receivable (AR) Dashboard (`/sales/ar`)
+- [x] Auto-calculate COGS, Margin, GP per order
+
+### Phase 12: Carbon Impact Dashboard ✅ 🆕
+- [x] Carbon formula constants (8 dynamic variables)
+- [x] `calcCarbonMetrics()` — pure function for Pilar 1 (Enteric) + Pilar 2 (Sequestration)
+- [x] Hero metric: total tCO₂e saved + tree equivalent
+- [x] Dual pillar breakdown cards with step-by-step formula
+- [x] Monthly trend chart (stacked Recharts area chart)
+- [x] Dynamic Variables editor (Owner & RND can modify constants → auto-recalculate)
+- [x] Investor Summary card with pie chart
+- [x] Carbon Bank mini-widget on main Dashboard
+
+### Phase 13: Inline Forms & UX Enhancements ✅ 🆕
+- [x] Tambah Lahan — inline form di `/farm/lands`
+- [x] New Batch — inline form di `/farm/batches`
+- [x] New Order — inline form di `/sales/feed`
+- [x] Add User — inline form di `/it-admin/users`
+- [x] Comprehensive button audit (semua tombol CTA sudah memiliki halaman tujuan)

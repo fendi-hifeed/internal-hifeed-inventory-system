@@ -35,6 +35,9 @@ import {
     chartDataHarvest,
     chartDataProduction,
     depreciationLogs,
+    defaultCarbonConstants,
+    calcCarbonMetrics,
+    carbonMonthlyData,
 } from "@/data/mock-data";
 import { useAuth } from "@/contexts/auth-context";
 import type { UserRole } from "@/data/mock-data";
@@ -485,6 +488,30 @@ export default function DashboardPage() {
                                 );
                             })}
                         </CardContent>
+                    </Card>
+                )}
+
+                {/* Carbon Bank Widget */}
+                {["OWNER", "IT_OPS", "FINANCE", "RND"].includes(user?.role || "") && (
+                    <Card className="border-0 shadow-sm overflow-hidden">
+                        <div className="bg-gradient-to-r from-emerald-600 to-sky-600 p-4 text-white">
+                            <div className="flex items-center justify-between">
+                                <div>
+                                    <div className="flex items-center gap-1.5 mb-1">
+                                        <Sprout className="h-3.5 w-3.5 text-emerald-200" />
+                                        <span className="text-[10px] font-semibold uppercase tracking-widest text-emerald-200">Carbon Bank</span>
+                                    </div>
+                                    <p className="text-3xl font-black">
+                                        {(carbonMonthlyData.reduce((s, d) => s + d.salesTon, 0) * calcCarbonMetrics(defaultCarbonConstants).totalPerTon).toFixed(1)}
+                                        <span className="text-sm font-normal ml-1">tCO₂e saved</span>
+                                    </p>
+                                </div>
+                                <div className="text-right">
+                                    <p className="text-xs text-emerald-100">{calcCarbonMetrics(defaultCarbonConstants).totalPerTon} tCO₂e / ton</p>
+                                    <a href="/carbon" className="text-[10px] text-emerald-200 hover:text-white underline">View Dashboard →</a>
+                                </div>
+                            </div>
+                        </div>
                     </Card>
                 )}
 

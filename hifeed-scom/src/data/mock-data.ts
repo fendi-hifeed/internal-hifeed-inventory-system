@@ -982,3 +982,79 @@ export const productionBags: ProductionBag[] = [
   { id: "bag14", barcodeId: "HF-PR2026001-002", productionRunId: "pr1", productionRunNumber: "PR-2026-001", productId: "p13", productName: "FG_SIL_PUR — Silase Pure", weightKg: 40, producedAt: "2026-01-20", status: "DELIVERED", deliveryTripId: "dt1", deliveryDoNumber: "DO-2026-001", customerName: "Karya Langit Bumi Permaculture", deliveredAt: "2026-02-11", qualityGrade: "A" },
   { id: "bag15", barcodeId: "HF-PR2026001-003", productionRunId: "pr1", productionRunNumber: "PR-2026-001", productId: "p13", productName: "FG_SIL_PUR — Silase Pure", weightKg: 40, producedAt: "2026-01-20", status: "IN_STOCK", qualityGrade: "A" },
 ];
+
+// ===== CARBON IMPACT — Formula Constants & Data =====
+// These are dynamic variables that Owner/RND can adjust via the Carbon Dashboard.
+// When changed, the entire dashboard auto-recalculates.
+
+export interface CarbonConstants {
+  dailyConsumptionPerCattle: number;     // kg/hari/ekor (default: 3)
+  emissionReductionBaseline: number;     // tCO₂e/tahun/ekor (default: 0.413)
+  dryWeightConversion: number;           // rasio pengeringan (default: 0.33 = 33%)
+  spoilageRate: number;                  // waste rate (default: 0.14 = 14%)
+  indogiferaFormulaRatio: number;        // % Indigofera dalam produk GC (default: 0.30)
+  carbonSequestrationPerHa: number;      // tCO₂e/ha/tahun (default: 20)
+  freshYieldPerHaPerHarvest: number;     // ton/ha/panen (default: 15)
+  harvestsPerYear: number;              // kali panen per tahun (default: 4)
+}
+
+export const defaultCarbonConstants: CarbonConstants = {
+  dailyConsumptionPerCattle: 3,
+  emissionReductionBaseline: 0.413,
+  dryWeightConversion: 0.33,
+  spoilageRate: 0.14,
+  indogiferaFormulaRatio: 0.30,
+  carbonSequestrationPerHa: 20,
+  freshYieldPerHaPerHarvest: 15,
+  harvestsPerYear: 4,
+};
+
+// Helper: Calculate derived values from constants
+export function calcCarbonMetrics(c: CarbonConstants) {
+  // PILAR 1: Enteric Methane Reduction
+  const annualConsumptionTon = (c.dailyConsumptionPerCattle * 365) / 1000;
+  const entericPerTon = c.emissionReductionBaseline / annualConsumptionTon;
+
+  // PILAR 2: Carbon Sequestration
+  const freshYieldPerYear = c.freshYieldPerHaPerHarvest * c.harvestsPerYear; // 60 ton
+  const dryWeight = freshYieldPerYear * c.dryWeightConversion;               // 19.8 ton
+  const afterSpoilage = dryWeight * (1 - c.spoilageRate);                   // 17.028 ton
+  const productOutputPerHa = afterSpoilage / c.indogiferaFormulaRatio;      // 56.76 ton GC
+  const sequestrationPerTon = c.carbonSequestrationPerHa / productOutputPerHa;
+
+  // TOTAL
+  const totalPerTon = entericPerTon + sequestrationPerTon;
+
+  return {
+    entericPerTon: Math.round(entericPerTon * 10000) / 10000,
+    sequestrationPerTon: Math.round(sequestrationPerTon * 10000) / 10000,
+    totalPerTon: Math.round(totalPerTon * 10000) / 10000,
+    annualConsumptionTon,
+    freshYieldPerYear,
+    dryWeight,
+    afterSpoilage,
+    productOutputPerHa,
+  };
+}
+
+// Monthly carbon data (cumulative sales in tons + active hectares)
+export interface CarbonMonthlyData {
+  month: string;
+  salesTon: number;       // total produk terjual bulan itu (ton)
+  activeHa: number;       // total lahan aktif (ha)
+  entericReduction: number;
+  sequestration: number;
+  totalImpact: number;
+}
+
+const _m = calcCarbonMetrics(defaultCarbonConstants);
+
+export const carbonMonthlyData: CarbonMonthlyData[] = [
+  { month: "Sep 2025", salesTon: 2.0,  activeHa: 2.0, entericReduction: +(2.0 * _m.entericPerTon).toFixed(2), sequestration: +(2.0 * _m.sequestrationPerTon).toFixed(2), totalImpact: +(2.0 * _m.totalPerTon).toFixed(2) },
+  { month: "Oct 2025", salesTon: 3.5,  activeHa: 2.0, entericReduction: +(3.5 * _m.entericPerTon).toFixed(2), sequestration: +(3.5 * _m.sequestrationPerTon).toFixed(2), totalImpact: +(3.5 * _m.totalPerTon).toFixed(2) },
+  { month: "Nov 2025", salesTon: 5.0,  activeHa: 6.0, entericReduction: +(5.0 * _m.entericPerTon).toFixed(2), sequestration: +(5.0 * _m.sequestrationPerTon).toFixed(2), totalImpact: +(5.0 * _m.totalPerTon).toFixed(2) },
+  { month: "Dec 2025", salesTon: 4.2,  activeHa: 6.0, entericReduction: +(4.2 * _m.entericPerTon).toFixed(2), sequestration: +(4.2 * _m.sequestrationPerTon).toFixed(2), totalImpact: +(4.2 * _m.totalPerTon).toFixed(2) },
+  { month: "Jan 2026", salesTon: 8.0,  activeHa: 6.3, entericReduction: +(8.0 * _m.entericPerTon).toFixed(2), sequestration: +(8.0 * _m.sequestrationPerTon).toFixed(2), totalImpact: +(8.0 * _m.totalPerTon).toFixed(2) },
+  { month: "Feb 2026", salesTon: 12.0, activeHa: 6.3, entericReduction: +(12.0 * _m.entericPerTon).toFixed(2), sequestration: +(12.0 * _m.sequestrationPerTon).toFixed(2), totalImpact: +(12.0 * _m.totalPerTon).toFixed(2) },
+  { month: "Mar 2026", salesTon: 18.0, activeHa: 8.8, entericReduction: +(18.0 * _m.entericPerTon).toFixed(2), sequestration: +(18.0 * _m.sequestrationPerTon).toFixed(2), totalImpact: +(18.0 * _m.totalPerTon).toFixed(2) },
+];

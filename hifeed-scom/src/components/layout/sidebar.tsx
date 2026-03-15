@@ -46,6 +46,7 @@ const navGroups: NavGroup[] = [
             { label: "Overview", href: "/dashboard" },
             { label: "Supply Chain", href: "/traceability" },
             { label: "Batch Tracking", href: "/traceability/batch" },
+            { label: "Carbon Impact", href: "/carbon" },
         ],
     },
     {
