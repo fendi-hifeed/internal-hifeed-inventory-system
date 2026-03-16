@@ -53,12 +53,12 @@ HiFeed SCOM adalah portal internal untuk mengelola seluruh rantai pasok operasio
 | 4 | **Farm Management** | **Land/Area Mapping (inline form)**, Batch planting **(inline form)**, Daily Log, Mortality tracking, Harvest, Seeds | 6 |
 | 5 | **Production** | BOM, Production Run, **Monthly Targets**, **Barcode per Karung**, IoT mesin | 3 |
 | 6 | **R&D** | Sample request, Experiment tracking, Test results, Budget/pagu control | 3 |
-| 7 | **Logistics** | Delivery Trip (+ create form), POD upload | 3 |
+| 7 | **Logistics** | Delivery Trip, **Predictive Costing**, **Map API**, **Fleet & Capacity**, **Wholesale Traceability (Master Barcode)**, **Driver Fatigue Mgmt**, POD | 6 |
 | 8 | **Sales / POS** | Feed + Trading Orders **(unified, inline form)**, **Account Receivable (AR)** | 2 |
 | 9 | **IT Admin** | Product Kodifikasi, User Management **(inline form)**, Data Export, System Settings, Audit Log | 5 |
 | 10 | **Traceability** | Supply Chain visualization, Batch Tracking (terintegrasi di Dashboard) | 2 |
 | 11 | **Carbon Impact** 🆕 | **Carbon Bank Dashboard** — dual pillar formula, dynamic variables, investor summary | 1 |
-| | | **Total Halaman** | **37** |
+| | | **Total Halaman** | **40** |
 
 ---
 
@@ -611,30 +611,302 @@ flowchart TD
 
 ## 10. Modul Logistics & Distribution
 
-### 10.1 Delivery Trip
+> [!IMPORTANT]
+> **Major update (16 Maret 2026)** — Modul logistik didesain ulang dari basic delivery tracking menjadi **B2B Wholesale Logistics Suite** berdasarkan arahan Ihsan. Perubahan utama:
+> - Skala operasi: **Wholesale (truk penuh)**, bukan retail (per karung)
+> - Traceability: **1 Master Barcode per truk**, bukan per karung
+> - Predictive Costing: estimasi biaya **sebelum** truk berangkat
+> - Fleet & Driver Management: validasi kapasitas + fatigue prevention
 
-- Pengiriman menggunakan **truk vendor** (belum punya armada sendiri)
-- Trip cost: bensin, tol, uang makan, dll
-- Item per trip terlink ke production run dan barcode ID karung
+### 10.1 User Journey — Alur Kerja Lengkap
 
-### 10.2 Proof of Delivery (POD)
+```mermaid
+flowchart TD
+    A["📦 Sales Order masuk\n8 Ton GC ke Peternakan X"] --> B["🗺️ Auto-Routing\nAPI Maps tarik koordinat"]
+    B --> C["💰 Predictive Costing\nJarak 150km, Tol 100K, BBM 250K"]
+    C --> D{"⚠️ Cost > Margin?"}
+    D -->|"Ya"| E["🚨 Warning ke Manager\nCari rute/armada alternatif"]
+    D -->|"Tidak"| F["🚛 Assign Armada\nTruk Fuso A (max 10 Ton) ✅"]
+    E --> F
+    F --> G{"👷 Fatigue Check\nSopir Budi: 2 jam hari ini"}
+    G -->|"< 8 jam"| H["✅ Sopir ACC"]
+    G -->|"≥ 8 jam"| I["🚫 Sopir BLOCKED\nPilih sopir lain"]
+    I --> H
+    H --> J["🏷️ Generate Master Barcode\n1 barcode = 1 truk penuh"]
+    J --> K["📄 Cetak Surat Jalan + QR"]
+    K --> L["🚚 Berangkat\nTrip cost → COGS"]
+    L --> M["📸 POD Upload\nFoto surat jalan"]
+    M --> N["✅ DELIVERED"]
+```
+
+### 10.2 Predictive Costing (Estimasi Biaya Otomatis)
+
+> [!CAUTION]
+> Surat jalan (DO) **TIDAK BOLEH** dicetak sebelum Predictive Cost dihitung dan disetujui. Ini untuk mencegah margin "bocor" di jalan.
+
+#### Formula Predictive Cost
+
+```
+Total Estimated Cost = Fuel Cost + Toll Cost + Driver Allowance + Misc
+
+Where:
+  Fuel Cost       = (Distance KM / Fuel Ratio) × Fuel Price per Liter
+  Toll Cost       = Sum of toll gates on route (from Map API)
+  Driver Allowance = Daily rate × Estimated trip days
+  Misc            = Configurable buffer (parkir, uang muat, dll)
+```
+
+#### Predictive Cost Fields
+
+| Field | Tipe | Sumber | Keterangan |
+|---|---|---|---|
+| `estimated_distance_km` | Decimal | 🤖 Map API | Jarak gudang → customer |
+| `fuel_ratio_km_per_liter` | Decimal | 🤖 Auto dari vehicle | Rasio BBM per jenis kendaraan |
+| `fuel_price_per_liter` | Decimal | ⚙️ System Settings | Harga BBM terkini (updateable) |
+| `estimated_fuel_cost` | Decimal | 🤖 Kalkulasi | distance / ratio × fuel price |
+| `estimated_toll_cost` | Decimal | 🤖 Map API / 📝 Manual | Biaya tol dari rute |
+| `driver_daily_allowance` | Decimal | ⚙️ System Settings | Uang saku/makan per hari |
+| `estimated_trip_days` | Integer | 🤖 Kalkulasi | Berdasarkan jarak + jam kerja |
+| `misc_cost` | Decimal | 📝 Input manual | Biaya lain-lain |
+| `total_estimated_cost` | Decimal | 🤖 Kalkulasi | Sum semua komponen |
+| `cost_per_ton` | Decimal | 🤖 Kalkulasi | Total cost / total tonase |
+| `margin_warning` | Boolean | 🤖 Auto-check | ⚠️ True jika cost/ton > selling margin |
+
+#### Margin Warning Logic
+
+```
+IF (total_estimated_cost / total_weight_ton) > (selling_price_per_ton × margin_threshold%)
+  → Show WARNING: "Biaya pengiriman melebihi {X}% dari margin. Pertimbangkan rute/armada alternatif."
+  → Log ke alert → Notification ke Logistics Manager + Owner
+```
+
+### 10.3 Integrasi API Peta
+
+#### Pilihan Provider
+
+| Option | Kelebihan | Kekurangan | Biaya |
+|---|---|---|---|
+| **Google Maps API** | Akurat, toll data Indo | Berbayar per request | ~$5/1000 req |
+| **Mapbox** | Customizable, murah | Toll data Indo kurang | ~$0.5/1000 req |
+| **OSRM (Open Source)** | Gratis, self-hosted | Perlu maintain server | Free |
+
+> **Rekomendasi**: Google Maps API untuk fase awal (akurasi tol Indonesia), evaluasi OSRM untuk cost optimization di fase berikutnya.
+
+#### Cara Kerja di Sistem
+
+1. **Sales input alamat customer** → sistem geocode ke koordinat (lat/lng)
+2. **Logistics buat trip** → sistem auto-calculate:
+   - Rute optimal dari Gudang HiFeed → Customer
+   - Jarak (KM)
+   - Estimasi waktu tempuh
+   - Gerbang tol yang dilalui + tarif
+3. **Data inject ke Predictive Costing** → cost otomatis terisi
+4. **Admin bisa override** → jika ada rute custom yang lebih efisien
+
+#### Customer Location Fields (tambahan di Master Partner)
+
+| Field | Tipe | Keterangan |
+|---|---|---|
+| `address` | Text | Alamat lengkap |
+| `latitude` | Decimal | Koordinat (auto dari geocoding) |
+| `longitude` | Decimal | Koordinat (auto dari geocoding) |
+| `district` | String | Kecamatan |
+| `regency` | String | Kabupaten |
+
+### 10.4 Fleet & Capacity Management (Manajemen Armada)
+
+> [!IMPORTANT]
+> HiFeed beroperasi di skala **B2B (Wholesale)** — pengiriman menggunakan truk besar (5–20 ton). Sistem **WAJIB** memvalidasi kapasitas kendaraan sebelum assign ke trip.
+
+#### Master Data Kendaraan (`vehicles`)
+
+| Field | Tipe | Keterangan |
+|---|---|---|
+| `id` | UUID | PK |
+| `plate_number` | String (Unique) | Nomor plat kendaraan |
+| `vehicle_type` | Enum | `PICKUP`, `ENGKEL`, `FUSO`, `TRONTON`, `TRAILER` |
+| `brand` | String | Merk kendaraan |
+| `max_capacity_ton` | Decimal | **Kapasitas maksimal (ton)** — kunci validasi |
+| `fuel_ratio_km_per_liter` | Decimal | Rasio BBM (km/liter) — untuk Predictive Costing |
+| `ownership` | Enum | `OWNED`, `VENDOR` |
+| `vendor_name` | String (nullable) | Nama vendor jika armada sewa |
+| `status` | Enum | `AVAILABLE`, `ON_TRIP`, `MAINTENANCE` |
+| `notes` | Text | Catatan kendaraan |
+
+#### Kapasitas per Jenis Kendaraan (Baseline)
+
+| Tipe | Kapasitas Max | Rasio BBM | Use Case |
+|---|---|---|---|
+| **Pickup** | 1 ton | 12 km/L | Pengiriman kecil / sampel |
+| **Engkel** | 5 ton | 8 km/L | Medium order |
+| **Fuso** | 10 ton | 6 km/L | Standard wholesale |
+| **Tronton** | 20 ton | 4 km/L | Big order |
+| **Trailer** | 30 ton | 3.5 km/L | Bulk / antar-pulau |
+
+#### Capacity Validation Logic
+
+```
+IF order_total_weight_ton > selected_vehicle.max_capacity_ton:
+  → BLOCK submission
+  → Show: "Order 10 Ton melebihi kapasitas Engkel (max 5 Ton).
+           Gunakan Fuso atau pecah menjadi 2 trip."
+  → Suggest: auto-recommend vehicle type yang cukup
+```
+
+### 10.5 Wholesale Traceability (1 Truk = 1 Master Barcode)
+
+> [!WARNING]
+> **Perubahan fundamental dari desain awal**: Barcode **BUKAN** per karung, melainkan **per truk/shipment**. Ini lebih efisien untuk skala B2B.
+
+#### Konsep Master Barcode
+
+```
+┌──────────────────────────────────────────────┐
+│  MASTER BARCODE: HF-DO2026-0042             │
+│  ┌──────────┐                                │
+│  │ QR CODE  │  Customer: Peternakan Sapi X   │
+│  │          │  Tanggal: 16 Mar 2026          │
+│  │          │  Total: 8 Ton Green Concentrate │
+│  └──────────┘  Truk: B 1234 XYZ (Fuso)      │
+│                                               │
+│  🔍 Scan untuk Traceability Lengkap          │
+└──────────────────────────────────────────────┘
+```
+
+#### Informasi yang Muncul Saat Scan
+
+Ketika customer/investor scan Master Barcode, mereka melihat:
+
+| Section | Data | Sumber |
+|---|---|---|
+| **Shipment Info** | DO number, tanggal, total tonase, customer | Logistics |
+| **Product Detail** | SKU, qty per produk, kualitas grade | Production |
+| **Production Trace** | Production run number, tanggal produksi, mesin, shift | Production |
+| **BOM / Recipe** | Komposisi bahan baku (external code only!) | Production |
+| **Farm Origin** | Blok lahan asal Indigofera, tanggal panen, batch ID | Farm (Arif) |
+| **Carbon Impact** 🌿 | tCO₂e saved dari muatan ini, breakdown pilar | Carbon (Naura) |
+| **Quality** | Test results terakhir (nutritional, palatability) | R&D |
+
+#### Master Barcode Format
+```
+HF-DO[YYYY]-[SERIAL_4_DIGIT]
+Contoh: HF-DO2026-0042
+```
+
+#### Database: `shipment_barcodes`
+
+| Field | Tipe | Keterangan |
+|---|---|---|
+| `id` | UUID | PK |
+| `barcode_id` | String (Unique) | Master barcode ID |
+| `delivery_trip_id` | FK | Link ke delivery trip |
+| `total_weight_ton` | Decimal | Total tonase di truk |
+| `products_summary` | JSONB | SKU + qty breakdown |
+| `production_runs` | JSONB | List production run IDs |
+| `farm_batches` | JSONB | List batch IDs (asal lahan) |
+| `carbon_impact_tco2e` | Decimal | Total tCO₂e dari muatan |
+| `generated_at` | Timestamp | Waktu generate |
+| `scanned_count` | Integer | Berapa kali di-scan (analytics) |
+
+### 10.6 Driver Fatigue Management
+
+> [!CAUTION]
+> Jika sopir sudah menyetir **≥ 8 jam** dalam 1 hari, sistem **WAJIB MEMBLOKIR** nama sopir dari dropdown penugasan. Ini untuk keselamatan aset dan personel.
+
+#### Master Data Sopir (`drivers`)
+
+| Field | Tipe | Keterangan |
+|---|---|---|
+| `id` | UUID | PK |
+| `name` | String | Nama sopir |
+| `phone` | String | No. HP |
+| `license_type` | Enum | `SIM_A`, `SIM_B1`, `SIM_B2` |
+| `license_expiry` | Date | Masa berlaku SIM |
+| `max_hours_per_day` | Integer | Batas jam kerja harian (default: 8) |
+| `status` | Enum | `AVAILABLE`, `ON_TRIP`, `REST`, `OFF_DUTY` |
+
+#### Shift & Driving Log (`driver_logs`)
+
+| Field | Tipe | Keterangan |
+|---|---|---|
+| `driver_id` | FK | Sopir |
+| `date` | Date | Tanggal |
+| `trip_id` | FK | Trip yang dikerjakan |
+| `start_time` | Time | Jam mulai mengemudi |
+| `end_time` | Time | Jam selesai |
+| `total_hours` | Decimal | Durasi (auto-calc) |
+| `rest_taken` | Boolean | Sudah istirahat 1 jam? |
+
+#### Fatigue Check Logic
+
+```
+today_hours = SUM(driver_logs WHERE driver_id = X AND date = TODAY)
+
+IF today_hours >= max_hours_per_day:
+  → Driver status = "REST" (auto)
+  → REMOVE from dropdown list assignment
+  → Alert: "Sopir Budi sudah menyetir 8 jam hari ini. Pilih sopir lain."
+
+IF today_hours >= 4 AND rest_taken = FALSE:
+  → WARNING: "Sopir belum istirahat. Wajib istirahat 1 jam sebelum lanjut."
+```
+
+#### Shift Standar (Configurable)
+
+| Shift | Jam | Keterangan |
+|---|---|---|
+| Shift 1 | 08:00 – 12:00 | Pagi |
+| Istirahat | 12:00 – 13:00 | **Wajib** (min 1 jam) |
+| Shift 2 | 13:00 – 17:00 | Siang |
+| Overtime | 17:00 – 20:00 | Hanya dengan approval Manager |
+
+### 10.7 Delivery Trip Fields (Updated)
+
+| Field | Tipe | Keterangan |
+|---|---|---|
+| `do_number` | String | Auto: DO-2026-XXXX |
+| `sales_order_id` | FK | Link ke order Sales |
+| `customer_id` | FK | Customer tujuan (dengan koordinat) |
+| `vehicle_id` | FK | Kendaraan yang digunakan |
+| `driver_id` | FK | Sopir yang ditugaskan |
+| `route_data` | JSONB | Rute dari Map API (polyline, waypoints) |
+| `status` | Enum | `PLANNING`, `COSTED`, `LOADING`, `ON_THE_WAY`, `DELIVERED` |
+| `predictive_cost` | JSONB | Breakdown cost (fuel, toll, driver, misc) |
+| `actual_cost` | Decimal | Biaya aktual setelah trip selesai |
+| `cost_variance` | Decimal | Selisih predicted vs actual |
+| `master_barcode_id` | FK | Link ke shipment barcode |
+| `pod_url` | String | URL bukti surat jalan |
+| `departure_time` | Timestamp | Waktu berangkat |
+| `arrival_time` | Timestamp | Waktu sampai |
+
+#### Status Flow
+
+```mermaid
+flowchart LR
+    A["PLANNING"] -->|"Predictive Cost calculated"| B["COSTED"]
+    B -->|"Armada + Sopir assigned"| C["LOADING"]
+    C -->|"Master Barcode generated, truk berangkat"| D["ON_THE_WAY"]
+    D -->|"POD uploaded"| E["DELIVERED"]
+    E -->|"Actual cost input"| F["Cost Variance logged"]
+```
+
+### 10.8 Proof of Delivery (POD)
 
 - Upload foto surat jalan sebagai bukti pengiriman
 - File disimpan di cloud storage
 - Status trip berubah ke `DELIVERED` setelah POD diupload
+- **Tambahan**: Customer bisa scan Master Barcode → confirm receipt di sistem
 
-### 10.3 Delivery Trip Fields
+### 10.9 Halaman Logistics (Updated)
 
-| Field | Tipe | Keterangan |
+| Page | Path | Fitur Baru |
 |---|---|---|
-| `do_number` | String | Nomor Delivery Order |
-| `customer_name` | String | Tujuan pengiriman |
-| `driver_name` | String | Nama driver |
-| `vehicle_plate` | String | Nomor plat kendaraan |
-| `trip_cost` | Decimal | Total biaya pengiriman |
-| `status` | Enum | `LOADING`, `ON_THE_WAY`, `DELIVERED` |
-| `items` | Array | List produk + qty + barcode ID karung |
-| `pod_url` | String | URL bukti surat jalan |
+| **Trip List** | `/logistics/trips` | Filter by status, driver, vehicle. Show predictive vs actual cost |
+| **Create Trip** | `/logistics/trips/create` | Map widget, auto-routing, predictive cost calculator, vehicle/driver selector with validation |
+| **POD** | `/logistics/pod` | Upload + Master Barcode viewer |
+| **Fleet** 🆕 | `/logistics/fleet` | Master data vehicle, status, maintenance schedule |
+| **Drivers** 🆕 | `/logistics/drivers` | Master data sopir, daily driving hours, fatigue status |
+| **Scan** 🆕 | `/logistics/scan` | Public: scan Master Barcode → full traceability view |
 
 ---
 

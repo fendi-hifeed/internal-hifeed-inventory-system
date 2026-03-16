@@ -113,7 +113,10 @@ const navGroups: NavGroup[] = [
         accessKey: "logistics",
         items: [
             { label: "Trips", href: "/logistics/trips" },
+            { label: "Fleet", href: "/logistics/fleet" },
+            { label: "Drivers", href: "/logistics/drivers" },
             { label: "Upload POD", href: "/logistics/pod" },
+            { label: "Scan Barcode", href: "/logistics/scan" },
         ],
     },
 

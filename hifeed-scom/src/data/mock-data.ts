@@ -1058,3 +1058,270 @@ export const carbonMonthlyData: CarbonMonthlyData[] = [
   { month: "Feb 2026", salesTon: 12.0, activeHa: 6.3, entericReduction: +(12.0 * _m.entericPerTon).toFixed(2), sequestration: +(12.0 * _m.sequestrationPerTon).toFixed(2), totalImpact: +(12.0 * _m.totalPerTon).toFixed(2) },
   { month: "Mar 2026", salesTon: 18.0, activeHa: 8.8, entericReduction: +(18.0 * _m.entericPerTon).toFixed(2), sequestration: +(18.0 * _m.sequestrationPerTon).toFixed(2), totalImpact: +(18.0 * _m.totalPerTon).toFixed(2) },
 ];
+
+// =============================================================================
+// LOGISTICS: Fleet & Capacity Management
+// =============================================================================
+
+export type VehicleType = "PICKUP" | "ENGKEL" | "FUSO" | "TRONTON" | "TRAILER";
+export type VehicleStatus = "AVAILABLE" | "ON_TRIP" | "MAINTENANCE";
+export type VehicleOwnership = "OWNED" | "VENDOR";
+
+export interface Vehicle {
+  id: string;
+  plateNumber: string;
+  vehicleType: VehicleType;
+  brand: string;
+  maxCapacityTon: number;
+  fuelRatioKmPerLiter: number;
+  ownership: VehicleOwnership;
+  vendorName?: string;
+  status: VehicleStatus;
+  notes?: string;
+}
+
+export const vehicleTypeLabels: Record<VehicleType, string> = {
+  PICKUP: "Pickup",
+  ENGKEL: "Engkel",
+  FUSO: "Fuso",
+  TRONTON: "Tronton",
+  TRAILER: "Trailer",
+};
+
+export const vehicleTypeCapacity: Record<VehicleType, { maxTon: number; fuelRatio: number }> = {
+  PICKUP: { maxTon: 1, fuelRatio: 12 },
+  ENGKEL: { maxTon: 5, fuelRatio: 8 },
+  FUSO: { maxTon: 10, fuelRatio: 6 },
+  TRONTON: { maxTon: 20, fuelRatio: 4 },
+  TRAILER: { maxTon: 30, fuelRatio: 3.5 },
+};
+
+export const vehicles: Vehicle[] = [
+  { id: "v1", plateNumber: "L 1234 AB", vehicleType: "FUSO", brand: "Mitsubishi Colt Diesel", maxCapacityTon: 10, fuelRatioKmPerLiter: 6, ownership: "OWNED", status: "AVAILABLE", notes: "Truk utama pengiriman wholesale" },
+  { id: "v2", plateNumber: "BE 5678 CD", vehicleType: "ENGKEL", brand: "Mitsubishi L300", maxCapacityTon: 5, fuelRatioKmPerLiter: 8, ownership: "OWNED", status: "ON_TRIP", notes: "Sedang kirim ke Metro Customer" },
+  { id: "v3", plateNumber: "D 9012 EF", vehicleType: "TRONTON", brand: "Hino Ranger", maxCapacityTon: 20, fuelRatioKmPerLiter: 4, ownership: "VENDOR", vendorName: "CV Logistic Jaya", status: "AVAILABLE" },
+  { id: "v4", plateNumber: "L 3456 GH", vehicleType: "PICKUP", brand: "Toyota Hilux", maxCapacityTon: 1, fuelRatioKmPerLiter: 12, ownership: "OWNED", status: "AVAILABLE", notes: "Untuk sampel & pengiriman kecil" },
+  { id: "v5", plateNumber: "B 7890 IJ", vehicleType: "TRAILER", brand: "Mercedes-Benz Actros", maxCapacityTon: 30, fuelRatioKmPerLiter: 3.5, ownership: "VENDOR", vendorName: "PT Trans Indo", status: "MAINTENANCE", notes: "Sedang ganti ban, ready Senin" },
+];
+
+// =============================================================================
+// LOGISTICS: Driver Fatigue Management
+// =============================================================================
+
+export type DriverStatus = "AVAILABLE" | "ON_TRIP" | "REST" | "OFF_DUTY";
+export type LicenseType = "SIM_A" | "SIM_B1" | "SIM_B2";
+
+export interface Driver {
+  id: string;
+  name: string;
+  phone: string;
+  licenseType: LicenseType;
+  licenseExpiry: string;
+  maxHoursPerDay: number;
+  status: DriverStatus;
+}
+
+export interface DriverLog {
+  id: string;
+  driverId: string;
+  date: string;
+  tripId?: string;
+  tripDO?: string;
+  startTime: string;
+  endTime: string;
+  totalHours: number;
+  restTaken: boolean;
+}
+
+export const drivers: Driver[] = [
+  { id: "dr1", name: "Agus Purnomo", phone: "081234567890", licenseType: "SIM_B1", licenseExpiry: "2027-05-15", maxHoursPerDay: 8, status: "AVAILABLE" },
+  { id: "dr2", name: "Supriyanto", phone: "081298765432", licenseType: "SIM_B2", licenseExpiry: "2028-03-20", maxHoursPerDay: 8, status: "ON_TRIP" },
+  { id: "dr3", name: "Rendi Saputra", phone: "081311223344", licenseType: "SIM_B1", licenseExpiry: "2027-11-10", maxHoursPerDay: 8, status: "REST" },
+  { id: "dr4", name: "Budi Setiawan", phone: "081455667788", licenseType: "SIM_A", licenseExpiry: "2026-12-01", maxHoursPerDay: 8, status: "AVAILABLE" },
+  { id: "dr5", name: "Hendra Wijaya", phone: "081599001122", licenseType: "SIM_B2", licenseExpiry: "2028-08-25", maxHoursPerDay: 8, status: "OFF_DUTY" },
+];
+
+export const driverLogs: DriverLog[] = [
+  // Agus — sudah 2 jam hari ini
+  { id: "dl1", driverId: "dr1", date: "2026-03-16", tripId: "dt1", tripDO: "DO-2026-001", startTime: "08:00", endTime: "10:00", totalHours: 2, restTaken: false },
+  // Supriyanto — sedang on-trip, sudah 5 jam
+  { id: "dl2", driverId: "dr2", date: "2026-03-16", tripId: "dt2", tripDO: "DO-2026-002", startTime: "06:00", endTime: "11:00", totalHours: 5, restTaken: true },
+  // Rendi — sudah 8 jam → REST (BLOCKED)
+  { id: "dl3", driverId: "dr3", date: "2026-03-16", tripId: "dt3", tripDO: "DO-2026-003", startTime: "06:00", endTime: "12:00", totalHours: 6, restTaken: true },
+  { id: "dl4", driverId: "dr3", date: "2026-03-16", startTime: "13:00", endTime: "15:00", totalHours: 2, restTaken: false },
+  // Budi — 0 jam hari ini (fresh)
+  // Hendra — off duty
+];
+
+// Helper: get today's driving hours for a driver
+export function getDriverTodayHours(driverId: string, date: string = "2026-03-16"): number {
+  return driverLogs
+    .filter((l) => l.driverId === driverId && l.date === date)
+    .reduce((sum, l) => sum + l.totalHours, 0);
+}
+
+// Helper: check if driver is available for assignment
+export function isDriverAvailable(driverId: string): { available: boolean; reason?: string; hoursToday: number } {
+  const driver = drivers.find((d) => d.id === driverId);
+  if (!driver) return { available: false, reason: "Driver not found", hoursToday: 0 };
+  if (driver.status === "OFF_DUTY") return { available: false, reason: "Sopir sedang OFF DUTY", hoursToday: 0 };
+  if (driver.status === "ON_TRIP") return { available: false, reason: "Sopir sedang dalam perjalanan", hoursToday: getDriverTodayHours(driverId) };
+
+  const hoursToday = getDriverTodayHours(driverId);
+  if (hoursToday >= driver.maxHoursPerDay) {
+    return { available: false, reason: `Sopir sudah mengemudi ${hoursToday} jam hari ini (max ${driver.maxHoursPerDay} jam)`, hoursToday };
+  }
+  return { available: true, hoursToday };
+}
+
+// =============================================================================
+// LOGISTICS: Predictive Costing + System Settings
+// =============================================================================
+
+export interface SystemSettings {
+  fuelPricePerLiter: number;      // Rp/liter
+  driverDailyAllowance: number;   // Rp/hari
+  marginThresholdPercent: number;  // % — warning if delivery cost exceeds this % of margin
+  sellingPricePerTon: number;      // Rp/ton (avg)
+}
+
+export const systemSettings: SystemSettings = {
+  fuelPricePerLiter: 13300,        // Pertamax
+  driverDailyAllowance: 150000,    // Uang saku + makan
+  marginThresholdPercent: 15,      // Warning at 15%
+  sellingPricePerTon: 5500000,     // Rp 5.5jt/ton avg
+};
+
+export interface PredictiveCost {
+  estimatedDistanceKm: number;
+  fuelRatioKmPerLiter: number;
+  fuelPricePerLiter: number;
+  estimatedFuelCost: number;
+  estimatedTollCost: number;
+  driverDailyAllowance: number;
+  estimatedTripDays: number;
+  miscCost: number;
+  totalEstimatedCost: number;
+  totalWeightTon: number;
+  costPerTon: number;
+  marginWarning: boolean;
+}
+
+export function calcPredictiveCost(
+  distanceKm: number,
+  fuelRatio: number,
+  tollCost: number,
+  miscCost: number,
+  weightTon: number,
+  tripDays: number = 1,
+): PredictiveCost {
+  const fuelCost = (distanceKm / fuelRatio) * systemSettings.fuelPricePerLiter;
+  const driverCost = systemSettings.driverDailyAllowance * tripDays;
+  const total = fuelCost + tollCost + driverCost + miscCost;
+  const costPerTon = weightTon > 0 ? total / weightTon : 0;
+  const marginWarning = costPerTon > (systemSettings.sellingPricePerTon * systemSettings.marginThresholdPercent / 100);
+
+  return {
+    estimatedDistanceKm: distanceKm,
+    fuelRatioKmPerLiter: fuelRatio,
+    fuelPricePerLiter: systemSettings.fuelPricePerLiter,
+    estimatedFuelCost: Math.round(fuelCost),
+    estimatedTollCost: tollCost,
+    driverDailyAllowance: systemSettings.driverDailyAllowance,
+    estimatedTripDays: tripDays,
+    miscCost,
+    totalEstimatedCost: Math.round(total),
+    totalWeightTon: weightTon,
+    costPerTon: Math.round(costPerTon),
+    marginWarning,
+  };
+}
+
+// =============================================================================
+// LOGISTICS: Wholesale Traceability — Master Barcode
+// =============================================================================
+
+export interface ShipmentBarcode {
+  id: string;
+  barcodeId: string;     // HF-DO2026-XXXX
+  deliveryTripId: string;
+  doNumber: string;
+  customerName: string;
+  totalWeightTon: number;
+  productsSummary: { productName: string; qty: number; uom: string }[];
+  productionRuns: { id: string; number: string; date: string; product: string }[];
+  farmBatches: { batchId: string; landName: string; harvestDate: string; cropType: string }[];
+  carbonImpactTco2e: number;
+  generatedAt: string;
+  scannedCount: number;
+}
+
+export const shipmentBarcodes: ShipmentBarcode[] = [
+  {
+    id: "sb1",
+    barcodeId: "HF-DO2026-0001",
+    deliveryTripId: "dt1",
+    doNumber: "DO-2026-001",
+    customerName: "Karya Langit Bumi Permaculture",
+    totalWeightTon: 4.0,
+    productsSummary: [
+      { productName: "FG_SIL_MIX — Silase Mix", qty: 4000, uom: "KG" },
+    ],
+    productionRuns: [
+      { id: "pr1", number: "PR-2026-001", date: "2026-02-08", product: "Silase Mix 500kg" },
+    ],
+    farmBatches: [
+      { batchId: "BATCH-IND-001", landName: "Lahan Ayu Mengwi 1", harvestDate: "2026-01-20", cropType: "Indigofera" },
+      { batchId: "BATCH-PAK-002", landName: "Lahan Pakchong Ternak 2", harvestDate: "2026-02-01", cropType: "Pakchong" },
+    ],
+    carbonImpactTco2e: +(4.0 * _m.totalPerTon).toFixed(2),
+    generatedAt: "2026-02-10 08:30",
+    scannedCount: 3,
+  },
+  {
+    id: "sb2",
+    barcodeId: "HF-DO2026-0002",
+    deliveryTripId: "dt2",
+    doNumber: "DO-2026-002",
+    customerName: "Metro Customer",
+    totalWeightTon: 1.5,
+    productsSummary: [
+      { productName: "FG_GC — Green Concentrate", qty: 1500, uom: "KG" },
+    ],
+    productionRuns: [
+      { id: "pr2", number: "PR-2026-002", date: "2026-02-12", product: "Green Concentrate 750kg" },
+    ],
+    farmBatches: [
+      { batchId: "BATCH-IND-001", landName: "Lahan Ayu Mengwi 1", harvestDate: "2026-01-20", cropType: "Indigofera" },
+    ],
+    carbonImpactTco2e: +(1.5 * _m.totalPerTon).toFixed(2),
+    generatedAt: "2026-02-15 06:15",
+    scannedCount: 1,
+  },
+];
+
+// Customer locations for Map API (extend partner with lat/lng)
+export interface CustomerLocation {
+  partnerId: string;
+  name: string;
+  address: string;
+  latitude: number;
+  longitude: number;
+  district: string;
+  regency: string;
+}
+
+export const customerLocations: CustomerLocation[] = [
+  { partnerId: "c1", name: "Karya Langit Bumi Permaculture", address: "Jl. Raya Mengwi No. 45, Mengwi, Badung, Bali", latitude: -8.5475, longitude: 115.1745, district: "Mengwi", regency: "Badung" },
+  { partnerId: "c2", name: "Metro Customer", address: "Jl. Jend. Sudirman No. 12, Metro, Lampung", latitude: -5.1140, longitude: 105.3069, district: "Metro Pusat", regency: "Metro" },
+  { partnerId: "c3", name: "Bandung Customer", address: "Jl. Padalarang-Cisarua KM 5, Lembang, Bandung Barat", latitude: -6.8115, longitude: 107.6178, district: "Lembang", regency: "Bandung Barat" },
+];
+
+// Warehouse origin for routing
+export const warehouseLocation = {
+  name: "Gudang HiFeed",
+  address: "Jl. Raya Serang KM 12, Kab. Serang, Banten",
+  latitude: -6.1201,
+  longitude: 106.1534,
+};
+

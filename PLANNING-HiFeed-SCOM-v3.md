@@ -1,6 +1,6 @@
 # 📋 Backend Implementation Planning — HiFeed SCOM v3.1
-**Berdasarkan**: PRD v3.1 (15 Maret 2026), Mockup Complete (37 Halaman, 11 Modul)
-**Timeline**: April 2026 — September 2026 (6 Bulan / 24 Minggu)
+**Berdasarkan**: PRD v3.1 (16 Maret 2026), Mockup Complete (40 Halaman, 11 Modul)
+**Timeline**: April 2026 — November 2026 (7 Bulan / 28 Minggu)
 **Developer**: Fendy Irfan (Solo Dev + AI Assistant)
 **Stack**: Django 5 + DRF + PostgreSQL 16 + Next.js 16 (existing frontend)
 **Status**: Draft — Pending Approval
@@ -77,24 +77,26 @@ gantt
     🧪 Test: RM → Produksi → FG     :p5t, 2026-08-03, 3d
 
     section Phase 6 - Logistics
-    Delivery Trip + POD              :p6a, 2026-08-06, 1w
-    Barcode attach ke Surat Jalan    :p6b, 2026-08-13, 1w
+    Fleet + Driver Master Data       :p6a, 2026-08-06, 1w
+    Map API + Predictive Costing     :p6b, 2026-08-13, 2w
+    Wholesale Traceability + POD     :p6c, 2026-08-27, 1w
+    🧪 E2E Test: Full Logistics      :p6t, 2026-09-03, 3d
 
     section Phase 7 - Sales + AR
-    Sales Orders (Feed + Trading)    :p7a, 2026-08-20, 2w
-    Account Receivable + Aging       :p7b, 2026-09-03, 1w
+    Sales Orders (Feed + Trading)    :p7a, 2026-09-08, 2w
+    Account Receivable + Aging       :p7b, 2026-09-22, 1w
 
     section Phase 8 - R&D
-    Sample Request + Pagu            :p8a, 2026-09-10, 1w
-    Experiments + Test Results       :p8b, 2026-09-17, 1w
+    Sample Request + Pagu            :p8a, 2026-09-29, 1w
+    Experiments + Test Results       :p8b, 2026-10-06, 1w
 
     section Phase 9 - Carbon + Dashboard
-    Carbon Impact API                :p9a, 2026-09-24, 1w
-    Dashboard APIs + Aggregation     :p9b, 2026-10-01, 1w
+    Carbon Impact API                :p9a, 2026-10-13, 1w
+    Dashboard APIs + Aggregation     :p9b, 2026-10-20, 1w
 
     section Phase 10 - Go-Live
-    UAT + Bug Fix                    :p10a, 2026-10-08, 2w
-    Data Migration + Go-Live         :p10b, 2026-10-22, 1w
+    UAT + Bug Fix                    :p10a, 2026-10-27, 2w
+    Data Migration + Go-Live         :p10b, 2026-11-10, 1w
 ```
 
 ---
@@ -296,43 +298,78 @@ gantt
 
 ---
 
-## Phase 6: Logistics
-**Durasi**: 2 minggu (6–20 Ags 2026)
-**Dependency**: Phase 5 (barcode per karung → attach ke trip)
-**Goal**: Delivery trip, POD, barcode traceability
+## Phase 6: Logistics & Distribution (B2B Wholesale Suite)
+**Durasi**: 5 minggu (6 Ags — 7 Sep 2026)
+**Dependency**: Phase 5 (Production → barcode), Phase 1 (Master Data → partners + locations)
+**Goal**: Full B2B logistics: predictive costing, map routing, fleet management, wholesale traceability, driver fatigue
 
-### Sprint 11 — Delivery & POD (6–20 Ags)
+### Sprint 11 — Fleet & Driver Master Data (6–13 Ags)
 
 | # | Task | Estimasi | Detail |
 |---|---|:---:|---|
-| 11.1 | `delivery_trips` + `trip_items` table + API | 2 hari | DO number, driver, vehicle |
-| 11.2 | Barcode attachment ke trip items | 1 hari | Scan bag → link ke trip |
-| 11.3 | POD upload + status flow | 1 hari | LOADING → ON_THE_WAY → DELIVERED |
-| 11.4 | Bag status auto-update on delivery | 1 hari | IN_STOCK → SHIPPED → DELIVERED |
-| 11.5 | Frontend: replace mock logistics | 1 hari | 3 halaman |
+| 11.1 | `vehicles` table + CRUD API (5 types) | 2 hari | PICKUP, ENGKEL, FUSO, TRONTON, TRAILER |
+| 11.2 | `drivers` table + CRUD API | 1 hari | License type, max hours, status |
+| 11.3 | `driver_logs` table + API | 1 hari | Shift tracking, hours calc |
+| 11.4 | Fatigue check engine (auto-block ≥8hr) | 1 hari | Remove from assignment dropdown |
+| 11.5 | Frontend: `/logistics/fleet` + `/logistics/drivers` | 2 hari | 2 halaman baru |
 
-**🧪 Test**:
-- [ ] Create trip → assign bags → LOADING
-- [ ] Upload POD → status = DELIVERED → bags = DELIVERED
-- [ ] Bag barcode scan shows delivery info
+### Sprint 12 — Map API & Predictive Costing (13–27 Ags)
+
+| # | Task | Estimasi | Detail |
+|---|---|:---:|---|
+| 12.1 | Google Maps API integration (routing + distance) | 2 hari | `@googlemaps/js-api-loader` or backend proxy |
+| 12.2 | Customer geocoding (address → lat/lng) | 1 hari | Extend `partners` table |
+| 12.3 | Toll detection pipeline (from route data) | 2 hari | Parse toll gates from directions API |
+| 12.4 | Predictive Cost calculator engine | 2 hari | Fuel + Toll + Driver + Misc → Total |
+| 12.5 | Margin warning alert (cost/ton > margin threshold) | 1 hari | Auto-warning to Logistics Manager + Owner |
+| 12.6 | System Settings: fuel price, driver allowance, margin threshold | 1 hari | Configurable by Owner/IT |
+| 12.7 | Frontend: map widget in `/logistics/trips/create` | 2 hari | Route visualization + cost breakdown |
+
+### Sprint 13 — Wholesale Traceability & Delivery (27 Ags — 7 Sep)
+
+| # | Task | Estimasi | Detail |
+|---|---|:---:|---|
+| 13.1 | `delivery_trips` table + CRUD API (updated fields) | 2 hari | 5 status: PLANNING → DELIVERED |
+| 13.2 | Capacity validation (order weight vs vehicle max) | 1 hari | BLOCK if over capacity, suggest split |
+| 13.3 | `shipment_barcodes` table + Master Barcode generation | 2 hari | 1 barcode per truk, format: HF-DO2026-XXXX |
+| 13.4 | Master Barcode scan API → full traceability view | 2 hari | Shipment + Product + Farm + Carbon data |
+| 13.5 | POD upload + customer receipt confirmation | 1 hari | Cloud storage + status cascade |
+| 13.6 | Cost variance tracking (predicted vs actual) | 1 hari | Log actual cost after trip, calc variance |
+| 13.7 | Frontend: update trips pages + `/logistics/scan` | 2 hari | 4 halaman (updated + new) |
+
+**🧪 E2E Test Sprint 13** (3 hari):
+
+| Test Case | Steps | Expected |
+|---|---|---|
+| **TC-LOG-01**: Auto-routing | Create trip ke customer dgn alamat | Map shows route, distance filled |
+| **TC-LOG-02**: Predictive cost | Route 150km + Fuso + 1 sopir | Fuel + Toll + Allowance calculated |
+| **TC-LOG-03**: Margin warning | Cost/ton > margin threshold | ⚠️ Warning alert shown |
+| **TC-LOG-04**: Capacity block | Order 10T → pilih Engkel (max 5T) | ❌ BLOCKED — suggest Fuso |
+| **TC-LOG-05**: Capacity OK | Order 10T → pilih Fuso (max 10T) | ✅ Accepted |
+| **TC-LOG-06**: Driver fatigue block | Sopir sudah 8 jam hari ini | ❌ Sopir removed from dropdown |
+| **TC-LOG-07**: Driver fatigue OK | Sopir baru 2 jam hari ini | ✅ Sopir selectable |
+| **TC-LOG-08**: Master Barcode | Generate barcode for trip | 1 QR code, scan → full traceability |
+| **TC-LOG-09**: Traceability scan | Scan HF-DO2026-0042 | Show: product, farm, production, carbon |
+| **TC-LOG-10**: POD → DELIVERED | Upload POD foto | Trip = DELIVERED, all items delivered |
+| **TC-LOG-11**: Cost variance | Actual cost 450K vs predicted 400K | Variance = +50K logged |
 
 ---
 
 ## Phase 7: Sales & Account Receivable
-**Durasi**: 2 minggu (20 Ags — 10 Sep 2026)
+**Durasi**: 3 minggu (8 Sep — 28 Sep 2026)
 **Dependency**: Phase 3 (Inventory), Phase 6 (Logistics)
 **Goal**: Sales orders, auto-calc margin, AR aging
 
-### Sprint 12 — Sales + AR (20 Ags — 10 Sep)
+### Sprint 14 — Sales + AR (8–28 Sep)
 
 | # | Task | Estimasi | Detail |
 |---|---|:---:|---|
-| 12.1 | `sales_orders` + `order_items` table | 2 hari | Unified Feed + Trading |
-| 12.2 | Auto-calc: Total, Cost, Margin, GP | 1 hari | Cost from WA valuation |
-| 12.3 | Stock deduction on order fulfillment | 1 hari | Movement flag = SALES |
-| 12.4 | `invoices` + `payments` table (AR engine) | 2 hari | Aging: 0-30, 31-60, 61-90, >90 |
-| 12.5 | AR Dashboard API (outstanding, overdue, collection rate) | 1 hari | Aggregation queries |
-| 12.6 | Frontend: replace mock sales + AR | 2 hari | `/sales/feed`, `/sales/ar` |
+| 14.1 | `sales_orders` + `order_items` table | 2 hari | Unified Feed + Trading |
+| 14.2 | Auto-calc: Total, Cost, Margin, GP | 1 hari | Cost from WA valuation |
+| 14.3 | Stock deduction on order fulfillment | 1 hari | Movement flag = SALES |
+| 14.4 | `invoices` + `payments` table (AR engine) | 2 hari | Aging: 0-30, 31-60, 61-90, >90 |
+| 14.5 | AR Dashboard API (outstanding, overdue, collection rate) | 1 hari | Aggregation queries |
+| 14.6 | Frontend: replace mock sales + AR | 2 hari | `/sales/feed`, `/sales/ar` |
 
 **🧪 Test**:
 - [ ] New order → stock deducted → movement SALES created
@@ -343,36 +380,36 @@ gantt
 ---
 
 ## Phase 8: R&D Module
-**Durasi**: 2 minggu (10–24 Sep 2026)
+**Durasi**: 2 minggu (29 Sep — 12 Okt 2026)
 **Dependency**: Phase 3 (Inventory — pagu calc), Phase 1 (Approval)
 
-### Sprint 13 — R&D (10–24 Sep)
+### Sprint 15 — R&D (29 Sep — 12 Okt)
 
 | # | Task | Estimasi | Detail |
 |---|---|:---:|---|
-| 13.1 | `rnd_sample_requests` + pagu check | 2 hari | Auto-approve if < 2% |
-| 13.2 | `rnd_experiments` + `rnd_test_results` | 2 hari | 4 test types |
-| 13.3 | Link sample → experiment (M:N) | 1 hari | |
-| 13.4 | R&D Dashboard API | 1 hari | Budget usage, active experiments |
-| 13.5 | Frontend: replace mock R&D | 1 hari | 3 halaman |
+| 15.1 | `rnd_sample_requests` + pagu check | 2 hari | Auto-approve if < 2% |
+| 15.2 | `rnd_experiments` + `rnd_test_results` | 2 hari | 4 test types |
+| 15.3 | Link sample → experiment (M:N) | 1 hari | |
+| 15.4 | R&D Dashboard API | 1 hari | Budget usage, active experiments |
+| 15.5 | Frontend: replace mock R&D | 1 hari | 3 halaman |
 
 ---
 
 ## Phase 9: Carbon Impact & Dashboard
-**Durasi**: 2 minggu (24 Sep — 8 Okt 2026)
+**Durasi**: 2 minggu (13 Okt — 26 Okt 2026)
 **Dependency**: Phase 4 (Farm — active Ha), Phase 7 (Sales — total ton sold)
 **Goal**: Carbon formula fungsional, dashboard live
 
-### Sprint 14 — Carbon & Dashboard APIs (24 Sep — 8 Okt)
+### Sprint 16 — Carbon & Dashboard APIs (13–26 Okt)
 
 | # | Task | Estimasi | Detail |
 |---|---|:---:|---|
-| 14.1 | `carbon_constants` table (8 dynamic variables) | 1 hari | CRUD, Owner/RND edit |
-| 14.2 | Carbon API: calc from real sales + farm data | 2 hari | Replace mock calcCarbonMetrics |
-| 14.3 | Dashboard aggregation APIs (all KPI stats) | 2 hari | Replace all mock dashboard data |
-| 14.4 | Traceability API (supply chain + batch tracking) | 1 hari | Aggregates from all modules |
-| 14.5 | IT Admin APIs (audit log, export, settings, users) | 2 hari | 5 sub-modules |
-| 14.6 | Frontend: replace ALL remaining mock data | 2 hari | Final mock-data elimination |
+| 16.1 | `carbon_constants` table (8 dynamic variables) | 1 hari | CRUD, Owner/RND edit |
+| 16.2 | Carbon API: calc from real sales + farm data | 2 hari | Replace mock calcCarbonMetrics |
+| 16.3 | Dashboard aggregation APIs (all KPI stats) | 2 hari | Replace all mock dashboard data |
+| 16.4 | Traceability API (supply chain + batch tracking) | 1 hari | Aggregates from all modules |
+| 16.5 | IT Admin APIs (audit log, export, settings, users) | 2 hari | 5 sub-modules |
+| 16.6 | Frontend: replace ALL remaining mock data | 2 hari | Final mock-data elimination |
 
 **🧪 Test**:
 - [ ] Carbon constants editable → dashboard recalculates
@@ -383,15 +420,15 @@ gantt
 ---
 
 ## Phase 10: UAT & Go-Live
-**Durasi**: 3 minggu (8–29 Okt 2026)
+**Durasi**: 3 minggu (27 Okt — 14 Nov 2026)
 **Goal**: System validated, data migrated, 🚀 LIVE
 
-### Sprint 15 — UAT (8–22 Okt)
+### Sprint 17 — UAT (27 Okt — 9 Nov)
 
 | # | Task | Estimasi | Detail |
 |---|---|:---:|---|
-| 15.1 | **UAT per modul** — setiap tim test modul mereka | 1 minggu | Test scenarios dari semua phase |
-| 15.2 | Bug fixing & polish | 1 minggu | Priority: P0 (blocker) → P1 (major) |
+| 17.1 | **UAT per modul** — setiap tim test modul mereka | 1 minggu | Test scenarios dari semua phase |
+| 17.2 | Bug fixing & polish | 1 minggu | Priority: P0 (blocker) → P1 (major) |
 
 #### UAT Participants & Scope
 
@@ -403,18 +440,18 @@ gantt
 | Operator | OPERATOR | Production Run, BOM, Barcode |
 | Naura (R&D) | RND | Sample Request, Experiments, Carbon Variables |
 | Yoga (Sales) | SALES | Sales Orders, New Order, AR |
-| Budi (Logistics) | LOGISTICS | Trips, POD |
+| Budi (Logistics) | LOGISTICS | **Fleet, Drivers, Predictive Cost, Trips, Master Barcode, POD** |
 | Fendi (IT) | IT_OPS | Kodifikasi, Users, Audit, Export, Settings |
 
-### Sprint 16 — Data Migration & Go-Live (22–29 Okt)
+### Sprint 18 — Data Migration & Go-Live (10–14 Nov)
 
 | # | Task | Estimasi | Detail |
 |---|---|:---:|---|
-| 16.1 | Data migration script (Excel → PostgreSQL) | 2 hari | Starting balance, products, partners |
-| 16.2 | Dry run migration (test environment) | 1 hari | Verify data integrity |
-| 16.3 | Production deployment | 1 hari | Docker → cloud server |
-| 16.4 | Final validation + user training | 1 hari | |
-| 16.5 | **🚀 GO-LIVE** | — | 29 Oktober 2026 |
+| 18.1 | Data migration script (Excel → PostgreSQL) | 2 hari | Starting balance, products, partners, **vehicles, drivers** |
+| 18.2 | Dry run migration (test environment) | 1 hari | Verify data integrity |
+| 18.3 | Production deployment | 1 hari | Docker → cloud server |
+| 18.4 | Final validation + user training | 1 hari | |
+| 18.5 | **🚀 GO-LIVE** | — | **14 November 2026** |
 
 ---
 
@@ -439,7 +476,10 @@ erDiagram
     harvest_results }|--o{ stock_items : increments
     production_runs ||--|{ bom_items : consumes
     production_runs ||--o{ production_bags : produces
-    production_bags }|--o| delivery_trip_items : shipped
+    vehicles ||--o{ delivery_trips : assigned
+    drivers ||--o{ delivery_trips : drives
+    drivers ||--o{ driver_logs : tracks
+    delivery_trips ||--o| shipment_barcodes : generates
     delivery_trips ||--|{ delivery_trip_items : contains
     sales_orders ||--|{ order_items : contains
     sales_orders ||--o{ invoices : billed
@@ -455,10 +495,10 @@ erDiagram
 | 4 | `stock_items`, `stock_movements`, `stock_opname`, `depreciation_logs` | 3 | 5-6 |
 | 5 | `farm_lands`, `farm_batches`, `daily_logs`, `seeds`, `harvest_results` | 4 | 7-8 |
 | 6 | `bom`, `bom_items`, `production_runs`, `production_targets`, `production_bags` | 5 | 9-10 |
-| 7 | `delivery_trips`, `trip_items`, `pod_documents` | 6 | 11 |
-| 8 | `sales_orders`, `order_items`, `invoices`, `payments` | 7 | 12 |
-| 9 | `rnd_sample_requests`, `rnd_experiments`, `rnd_test_results` | 8 | 13 |
-| 10 | `carbon_constants`, `audit_logs`, `system_settings` | 9 | 14 |
+| 7 | `vehicles`, `drivers`, `driver_logs`, `delivery_trips`, `trip_items`, `shipment_barcodes` | 6 | 11-13 |
+| 8 | `sales_orders`, `order_items`, `invoices`, `payments` | 7 | 14 |
+| 9 | `rnd_sample_requests`, `rnd_experiments`, `rnd_test_results` | 8 | 15 |
+| 10 | `carbon_constants`, `audit_logs`, `system_settings` | 9 | 16 |
 
 ---
 
@@ -493,7 +533,7 @@ Setiap sprint berakhir dengan **3 hari testing** yang mencakup:
 | Inventory | 3-cluster stock + 6 movement flags + pagu hard-lock |
 | Farm | Land → Batch → Daily Log → Harvest → Stock |
 | Production | BOM → Run → RM deduct → FG increment → Barcode |
-| Logistics | Trip → Bag attach → POD upload → status cascade |
+| Logistics | Sales Order → Auto-route → Predictive Cost → Fleet assign → Capacity check → Driver fatigue check → Master Barcode → POD → Cost variance |
 | Sales | Order → Cost calc → Stock deduct → Invoice → AR aging |
 | R&D | Sample request → Pagu check → Experiment → Results |
 | Carbon | Constants editable → Hero/Pilar/Chart auto-recalc from real data |
@@ -509,11 +549,11 @@ Setiap sprint berakhir dengan **3 hari testing** yang mencakup:
 | **M3**: Inventory Complete | 18 Jun 2026 | 3-cluster, 6 flags, opname, depreciation, 7 test cases pass |
 | **M4**: Farm Complete | 11 Jul 2026 | Land → Batch → Harvest → Stock, 6 test cases pass |
 | **M5**: Production + Barcode | 6 Ags 2026 | BOM → Run → FG → Barcode → Trace, 6 test cases pass |
-| **M6**: Logistics Done | 20 Ags 2026 | Trip → POD → Bag status cascade |
-| **M7**: Sales + AR | 10 Sep 2026 | Orders + Auto margin + AR aging |
-| **M8**: R&D Done | 24 Sep 2026 | Sample + Pagu + Experiments |
-| **M9**: Carbon + Dashboard | 8 Okt 2026 | All dashboard APIs from real data |
-| **🚀 GO-LIVE** | **29 Okt 2026** | UAT passed, data migrated, all users trained |
+| **M6**: Logistics Suite | **7 Sep 2026** | Fleet, drivers, map routing, predictive cost, wholesale barcode, fatigue mgmt, 11 test cases pass |
+| **M7**: Sales + AR | 28 Sep 2026 | Orders + Auto margin + AR aging |
+| **M8**: R&D Done | 12 Okt 2026 | Sample + Pagu + Experiments |
+| **M9**: Carbon + Dashboard | 26 Okt 2026 | All dashboard APIs from real data |
+| **🚀 GO-LIVE** | **14 Nov 2026** | UAT passed, data migrated, all users trained |
 
 ---
 
@@ -526,6 +566,7 @@ Setiap sprint berakhir dengan **3 hari testing** yang mencakup:
 | Internet lahan tidak stabil | 🟡 Medium | 🟡 Medium | Offline-capable daily log form (PWA) |
 | Weighted Average formula dispute dgn Accounting | 🔴 High | 🟢 Low | Validate dgn Dania sebelum Sprint 5 |
 | Carbon formula investor challenge | 🟡 Medium | 🟡 Medium | Dynamic variables → Naura bisa adjust |
+| Google Maps API cost overrun | 🟡 Medium | 🟡 Medium | Monitor usage, switch to OSRM if > $50/month |
 | Scope creep (fitur baru mid-sprint) | 🟡 Medium | 🔴 High | Strict sprint scope, new requests → backlog |
 
 ---
@@ -534,7 +575,7 @@ Setiap sprint berakhir dengan **3 hari testing** yang mencakup:
 > Planning ini adalah **living document**. Update setiap sprint review.
 > 
 > **Quick Reference**:
-> - Total: **10 Phase, 16 Sprint, ~24 minggu**
-> - Total tabel database: **~30 tabel**
-> - Total test cases: **~150+**
-> - Go-Live target: **29 Oktober 2026**
+> - Total: **10 Phase, 18 Sprint, ~28 minggu**
+> - Total tabel database: **~35 tabel**
+> - Total test cases: **~170+**
+> - Go-Live target: **14 November 2026**
